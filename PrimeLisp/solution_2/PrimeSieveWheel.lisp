@@ -17,9 +17,9 @@
 (declaim
   (optimize (speed 3) (safety 0) (debug 0)))
 
-(defconstant +bits-per-word+ 32)
-(defconstant +MASK+ #x1F)
-(defconstant +SHIFT+ -5)
+(defconstant +bits-per-word+ 64)
+(defconstant +MASK+ #x3F)
+(defconstant +SHIFT+ -6)
 
 (defconstant +steps+ #(
  8 1 2 3 1 3 2 1 2 3 3 1 3 2 1 3 2 3 4 2 1 2 1 2 7 
@@ -267,7 +267,7 @@
     :maxints maxints
     :a (make-array
          (1+ (floor maxints +bits-per-word+))
-         :element-type '(unsigned-byte 32)
+         :element-type '(unsigned-byte 64)
          :initial-element 0)))
 
 
@@ -283,7 +283,7 @@
          (factorh (ash 17 -1))
          (qh (ash q -1)))
     (declare (fixnum maxints maxintsh q step inc factorh qh)
-             (simple-vector a))
+             (type (array (unsigned-byte 64) 1) a))
     (do () ((> factorh qh))
 
       (if (not (zerop (logand (aref a (ash factorh +SHIFT+))
@@ -302,8 +302,8 @@
               ((> i maxintsh))
             (declare (fixnum i))
             (setf (aref a (ash i +SHIFT+))
-                  (logior (the (unsigned-byte 32) (aref a (ash i +SHIFT+)))
-                          (the (unsigned-byte 32) (ash 1 (logand i +MASK+)))))
+                  (logior (aref a (ash i +SHIFT+))
+                          (ash 1 (logand i +MASK+))))
             (incf i (the fixnum (* factor ninc)))
             (when (= (incf istep) 5760) (setq istep 0))
             (setq ninc (aref steps istep)))
@@ -321,10 +321,11 @@
          (factor 17)
          (step 1)
          (inc (ash (aref +steps+ step) 1)))
-    (declare (fixnum maxints ncount factor inc) (simple-vector a))
+    (declare (fixnum maxints ncount factor inc)
+             (type (array (unsigned-byte 64) 1) a))
     (do () ((> factor maxints))
-      (when (zerop (logand (aref a (the (unsigned-byte 32) (ash factor (+ -1 +SHIFT+))))
-                           (ash 1 (the (unsigned-byte 32) (logand (ash factor -1) +MASK+)))))
+      (when (zerop (logand (aref a (ash factor (+ -1 +SHIFT+)))
+                           (ash 1 (logand (ash factor -1) +MASK+))))
         (incf ncount))
       (incf factor inc)
       (when (= (incf step) 5760) (setq step 0))
@@ -332,7 +333,7 @@
     ncount))
 
 
-;(disassemble 'run-sieve)
+(disassemble 'run-sieve)
 
 
 (let* ((passes 0)
