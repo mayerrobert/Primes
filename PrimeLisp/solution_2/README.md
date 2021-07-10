@@ -20,8 +20,8 @@ The state of the sieve is stored in a Lisp struct (closest to a class in Lisp).
 
 Algorithm is _wheel_, see PrimeC/solution_2/README.md for a better explanation than I would be able to give.
 
-PrimeSieveWheel.lisp stores bits in an array of `(unsigned-byte 32)`,
-much like Daniel's code uses an array of `uint32_t` when compiled without `-DCOMPILE_64_BIT`.
+PrimeSieveWheel.lisp stores bits in an array of `(unsigned-byte 64)`,
+much like Daniel's code uses an array of `uint64_t` when compiled with `-DCOMPILE_64_BIT`.
 
 ## Run instructions
 
@@ -44,10 +44,10 @@ Or use `docker` or `podman` to build and run the provided dockerfile:
 
 Using sbcl 2.0.0 on Windows 7, Pentium(R) Dual Core T4300 @ 2.10GHz I get
 
-    D:\projects\primes\PrimeLisp\solution_2>sbcl --script PrimeSieve.lisp
+    D:\projects\Primes\PrimeLisp\solution_2>sbcl --script PrimeSieve.lisp
     Passes: 1853  Time: 5.002 Avg: 2.6994064 ms Count: 78498
     mayerrobert-cl;1853;5.002;1;algorithm=base,faithful=no,bits=1
     
-    D:\projects\Primes\PrimeLisp\solution_2>sbcl --script PrimeSieveWheel.lisp
-    Passes: 4875  Time: 5.0 Avg: 1.0256411 ms Count: 78498
-    mayerrobert-cl-wheel;4875;5.0;1;algorithm=wheel,faithful=no,bits=1
+    D:\projects\Primes>sbcl --script PrimeLisp\solution_2\PrimeSieveWheel.lisp
+    Passes: 5049  Time: 5.002 Avg: 0.99069124 ms Count: 78498
+    mayerrobert-cl-wheel;5049;5.002;1;algorithm=wheel,faithful=no,bits=1
