@@ -19,8 +19,7 @@
   (optimize (speed 3) (safety 0) (debug 0)))
 
 (defconstant +bits-per-word+ 64)
-(defconstant +MASK+ #x3F)
-(defconstant +SHIFT+ -6)
+(defconstant +MASK+ (- +bits-per-word+ 1))
 
 (defconstant +steps+ #(
  8 1 2 3 1 3 2 1 2 3 3 1 3 2 1 3 2 3 4 2 1 2 1 2 7 
@@ -276,18 +275,18 @@
   (declare (sieve-state sieve-state) (simple-vector steps))
 
   (let* ((maxints (sieve-state-maxints sieve-state))
-         (maxintsh (ash maxints -1))
+         (maxintsh (floor maxints 2))
          (a (sieve-state-a sieve-state))
          (q (1+ (isqrt maxints)))
          (step 1)
          (inc (aref steps step))
-         (factorh (ash 17 -1))
-         (qh (ash q -1)))
+         (factorh (floor 17 2))
+         (qh (floor q 2)))
     (declare (fixnum maxints maxintsh q step inc factorh qh)
              (type (array (unsigned-byte 64) 1) a))
     (do () ((> factorh qh))
 
-      (if (not (zerop (logand (aref a (ash factorh +SHIFT+))
+      (if (not (zerop (logand (aref a (floor factorh +bits-per-word+))
                               (ash 1 (logand factorh +MASK+)))))
             (progn
               (incf factorh inc)
@@ -296,14 +295,14 @@
 
         (let* ((istep step)
                (ninc (aref steps istep))
-               (factor (1+ (ash factorh 1))))
+               (factor (1+ (* factorh 2))))
           (declare (fixnum istep ninc factor))
 
-          (do ((i (ash (the fixnum (* factor factor)) -1)))
+          (do ((i (floor (the fixnum (* factor factor)) 2)))
               ((> i maxintsh))
             (declare (fixnum i))
-            (setf (aref a (ash i +SHIFT+))
-                  (logior (aref a (ash i +SHIFT+))
+            (setf (aref a (floor i +bits-per-word+))
+                  (logior (aref a (floor i +bits-per-word+))
                           (ash 1 (logand i +MASK+))))
             (incf i (the fixnum (* factor ninc)))
             (when (= (incf istep) 5760) (setq istep 0))
@@ -321,16 +320,16 @@
          (ncount 6)
          (factor 17)
          (step 1)
-         (inc (ash (aref +steps+ step) 1)))
+         (inc (* (aref +steps+ step) 2)))
     (declare (fixnum maxints ncount factor inc)
              (type (array (unsigned-byte 64) 1) a))
     (do () ((> factor maxints))
-      (when (zerop (logand (aref a (ash factor (+ -1 +SHIFT+)))
-                           (ash 1 (logand (ash factor -1) +MASK+))))
+      (when (zerop (logand (aref a (floor factor (* 2 +bits-per-word+)))
+                           (ash 1 (logand (floor factor 2) +MASK+))))
         (incf ncount))
       (incf factor inc)
       (when (= (incf step) 5760) (setq step 0))
-      (setq inc (ash (the fixnum (aref +steps+ step)) 1)))
+      (setq inc (* (the fixnum (aref +steps+ step)) 2)))
     ncount))
 
 
