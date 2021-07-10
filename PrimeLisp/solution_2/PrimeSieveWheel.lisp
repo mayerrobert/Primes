@@ -5,10 +5,14 @@
 ;;; run as:
 ;;;     sbcl --script PrimeSieveWheel.lisp
 ;;;
+;;; Algorithm is _wheel_, see PrimeC/solution_2/README.md for a better explanation than I would be able to give.
+;;; I have no idea how the wheel algorithm works, I just stole the algorithm.
 ;;;
-;;; I have no idea how this works I just stole the algorithm.
-;;;
-;;; For Common Lisp bit ops see https://lispcookbook.github.io/cl-cookbook/numbers.html#bit-wise-operation
+;;; For Common Lisp bit ops see https://lispcookbook.github.io/cl-cookbook/numbers.html#bit-wise-operation,
+;;; although most of the shifts were replaced by "normel" Lisp functions,
+;;; e.g. x>>n -> (floor x m), a&b -> (mod a b), 1<<x -> (expt 2 x)
+;;; because sbcl optimizes these rather efficiently.
+;;; Only logior and logand remain.
 ;;;
 ;;; (compile-file "PrimeSieveWheel.lisp") will show info during the compilation
 ;;; regarding any inefficient code that can't be optimized.
@@ -19,7 +23,6 @@
   (optimize (speed 3) (safety 0) (debug 0)))
 
 (defconstant +bits-per-word+ 64)
-(defconstant +MASK+ (- +bits-per-word+ 1))
 
 (defconstant +steps+ #(
  8 1 2 3 1 3 2 1 2 3 3 1 3 2 1 3 2 3 4 2 1 2 1 2 7 
@@ -287,7 +290,7 @@
     (do () ((> factorh qh))
 
       (if (not (zerop (logand (aref a (floor factorh +bits-per-word+))
-                              (ash 1 (logand factorh +MASK+)))))
+                              (expt 2 (mod factorh +bits-per-word+)))))
             (progn
               (incf factorh inc)
               (when (= (incf step) 5760) (setq step 0))
@@ -303,7 +306,7 @@
             (declare (fixnum i))
             (setf (aref a (floor i +bits-per-word+))
                   (logior (aref a (floor i +bits-per-word+))
-                          (ash 1 (logand i +MASK+))))
+                          (expt 2 (mod i +bits-per-word+))))
             (incf i (the fixnum (* factor ninc)))
             (when (= (incf istep) 5760) (setq istep 0))
             (setq ninc (aref steps istep)))
@@ -325,7 +328,7 @@
              (type (array (unsigned-byte 64) 1) a))
     (do () ((> factor maxints))
       (when (zerop (logand (aref a (floor factor (* 2 +bits-per-word+)))
-                           (ash 1 (logand (floor factor 2) +MASK+))))
+                           (expt 2 (mod (floor factor 2) +bits-per-word+))))
         (incf ncount))
       (incf factor inc)
       (when (= (incf step) 5760) (setq step 0))
@@ -349,6 +352,6 @@
 
   (let* ((duration  (/ (- (get-internal-real-time) start) internal-time-units-per-second))
          (avg (/ duration passes)))
-    (format *error-output* "Passes: ~d  Time: ~f Avg: ~f ms Count: ~d~%" passes duration (* 1000 avg)  (count-primes result))
+    (format *error-output* "Passes: ~d, Time: ~f, Avg: ~f ms, Count: ~d~%" passes duration (* 1000 avg)  (count-primes result))
 
     (format t "mayerrobert-cl-wheel;~d;~f;1;algorithm=wheel,faithful=no,bits=1~%" passes duration)))
