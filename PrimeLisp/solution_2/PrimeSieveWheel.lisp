@@ -1,6 +1,6 @@
 ;;;; Common Lisp port of PrimeC/solution_2/sieve_5760of30030_only_write_read_bits.c by Daniel Spangberg
 ;;;
-;;; approx. 2.6x speedup over solution_2, approx. 325x speedup over solution_1
+;;; approx. 2.7x speedup over PrimeSieve.lisp, approx. 335x speedup over solution_1
 ;;;
 ;;; run as:
 ;;;     sbcl --script PrimeSieveWheel.lisp
@@ -10,8 +10,9 @@
 ;;;
 ;;; For Common Lisp bit ops see https://lispcookbook.github.io/cl-cookbook/numbers.html#bit-wise-operation
 ;;;
-;;; (compile-file "PrimeSieveWheel.lisp") will show lots of info during the compilation
-;;; regarding inefficient code that can't be optimized.
+;;; (compile-file "PrimeSieveWheel.lisp") will show info during the compilation
+;;; regarding any inefficient code that can't be optimized.
+;;; I added type declarations until there were no more messages concerning run-sieve.
 
 
 (declaim
@@ -333,7 +334,7 @@
     ncount))
 
 
-(disassemble 'run-sieve)
+;(disassemble 'run-sieve)
 
 
 (let* ((passes 0)
