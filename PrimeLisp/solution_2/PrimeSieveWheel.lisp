@@ -25,6 +25,9 @@
 
 (defconstant +bits-per-word+ 64)
 
+(deftype sieve-bitpos-type ()
+  `(integer 0 63))
+
 (deftype sieve-element-type ()
   `(unsigned-byte 64))
 
@@ -282,8 +285,20 @@
          :initial-element 0)))
 
 
+(defmacro or= (place value)
+  `(setf ,place (logior ,place ,value)))
+
+
+;(declaim (inline nth-bit-set-p)) ; inlining is slower on Pentium(R) Dual Core T4300 @ 2.10GHz ?!?
+
+(defun nth-bit-set-p (value n)
+  (declare (type sieve-element-type value)
+           (type sieve-bitpos-type n))
+  (/= 0 (logand value (expt 2 n))))
+
+
 (defun run-sieve (sieve-state steps)
-  (declare (sieve-state sieve-state) (simple-vector steps))
+  (declare (sieve-state sieve-state) (type (simple-array fixnum 1) steps))
 
   (let* ((maxints (sieve-state-maxints sieve-state))
          (maxintsh (floor maxints 2))
@@ -297,8 +312,8 @@
              (type sieve-array-type a))
     (do () ((> factorh qh))
 
-      (if (not (zerop (logand (aref a (floor factorh +bits-per-word+))
-                              (expt 2 (mod factorh +bits-per-word+)))))
+      (if (nth-bit-set-p (aref a (floor factorh +bits-per-word+))
+                         (mod factorh +bits-per-word+))
             (progn
               (incf factorh inc)
               (when (= (incf step) 5760) (setq step 0))
@@ -312,9 +327,8 @@
           (do ((i (floor (the fixnum (* factor factor)) 2)))
               ((> i maxintsh))
             (declare (fixnum i))
-            (setf (aref a (floor i +bits-per-word+))
-                  (logior (aref a (floor i +bits-per-word+))
-                          (expt 2 (mod i +bits-per-word+))))
+            (or= (aref a (floor i +bits-per-word+))
+                 (expt 2 (mod i +bits-per-word+)))
             (incf i (the fixnum (* factor ninc)))
             (when (= (incf istep) 5760) (setq istep 0))
             (setq ninc (aref steps istep)))
@@ -344,6 +358,7 @@
     ncount))
 
 
+;(disassemble 'nth-bit-set-p)
 ;(disassemble 'run-sieve)
 
 
