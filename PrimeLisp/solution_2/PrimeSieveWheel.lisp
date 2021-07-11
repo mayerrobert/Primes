@@ -289,7 +289,7 @@
   `(setf ,place (logior ,place ,value)))
 
 
-;(declaim (inline nth-bit-set-p)) ; inlining is slower on Pentium(R) Dual Core T4300 @ 2.10GHz ?!?
+(declaim (inline nth-bit-set-p))
 
 (defun nth-bit-set-p (value n)
   (declare (type sieve-element-type value)
@@ -300,42 +300,30 @@
 (defun run-sieve (sieve-state steps)
   (declare (sieve-state sieve-state) (type (simple-array fixnum 1) steps))
 
-  (let* ((maxints (sieve-state-maxints sieve-state))
-         (maxintsh (floor maxints 2))
-         (a (sieve-state-a sieve-state))
-         (q (1+ (isqrt maxints)))
-         (step 1)
-         (inc (aref steps step))
-         (factorh (floor 17 2))
-         (qh (floor q 2)))
+  (do* ((maxints (sieve-state-maxints sieve-state))
+        (maxintsh (floor maxints 2))
+        (a (sieve-state-a sieve-state))
+        (q (1+ (isqrt maxints)))
+        (step 1  (if (= step 5759) 0 (1+ step)))
+        (inc (aref steps step) (aref steps step))
+        (factorh (floor 17 2))
+        (qh (floor q 2)))
+       ((> factorh qh))
     (declare (fixnum maxints maxintsh q step inc factorh qh)
              (type sieve-array-type a))
-    (do () ((> factorh qh))
+    (unless (nth-bit-set-p (aref a (floor factorh +bits-per-word+))
+                           (mod factorh +bits-per-word+))
+      (do* ((istep step (if (= istep 5759) 0 (1+ istep)))
+            (ninc (aref steps istep) (aref steps istep))
+            (factor (1+ (* factorh 2)))
+            (i (floor (the fixnum (* factor factor)) 2)))
+           ((> i maxintsh))
+        (declare (fixnum istep ninc factor i))
+        (or= (aref a (floor i +bits-per-word+))
+             (expt 2 (mod i +bits-per-word+)))
+        (incf i (the fixnum (* factor ninc)))))
 
-      (if (nth-bit-set-p (aref a (floor factorh +bits-per-word+))
-                         (mod factorh +bits-per-word+))
-            (progn
-              (incf factorh inc)
-              (when (= (incf step) 5760) (setq step 0))
-              (setq inc (aref steps step)))
-
-        (let* ((istep step)
-               (ninc (aref steps istep))
-               (factor (1+ (* factorh 2))))
-          (declare (fixnum istep ninc factor))
-
-          (do ((i (floor (the fixnum (* factor factor)) 2)))
-              ((> i maxintsh))
-            (declare (fixnum i))
-            (or= (aref a (floor i +bits-per-word+))
-                 (expt 2 (mod i +bits-per-word+)))
-            (incf i (the fixnum (* factor ninc)))
-            (when (= (incf istep) 5760) (setq istep 0))
-            (setq ninc (aref steps istep)))
-
-          (incf factorh inc)
-          (if (= (incf step) 5760) (setq step 0))
-          (setq inc (aref steps step)))))))
+    (incf factorh inc)))
 
 
 (defun count-primes (sieve-state)
