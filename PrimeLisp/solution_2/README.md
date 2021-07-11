@@ -49,5 +49,5 @@ Using sbcl 2.0.0 on Windows 7, Pentium(R) Dual Core T4300 @ 2.10GHz I get
     mayerrobert-cl;1853;5.002;1;algorithm=base,faithful=no,bits=1
     
     D:\projects\Primes\PrimeLisp\solution_2>sbcl --script PrimeSieveWheel.lisp
-    Passes: 5936, Time: 5.0, Avg: 0.84231806 ms, Count: 78498
-    mayerrobert-cl-wheel;5936;5.0;1;algorithm=wheel,faithful=no,bits=1
+    Passes: 6006, Time: 5.002, Avg: 0.8328338 ms, Count: 78498
+    mayerrobert-cl-wheel;6006;5.002;1;algorithm=wheel,faithful=no,bits=1

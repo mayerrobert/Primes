@@ -23,6 +23,9 @@
   (optimize (speed 3) (safety 0) (debug 0)))
 
 
+; Thould match machine register size for efficient code.
+; Too small hurts a litle, too big hurts a lot
+; because sbcl will be forced to use bignums
 (defconstant +bits-per-word+ 64)
 
 ; apparently some Lisps have non-negative-fixnum, sbcl doesn't
@@ -315,7 +318,7 @@
         (maxintsh (floor maxints 2))
         (a (sieve-state-a sieve-state))
         (q (1+ (isqrt maxints)))
-        (step 1  (if (= step 5759) 0 (1+ step)))
+        (step 1  (if (>= step 5759) 0 (1+ step)))
         (inc (aref steps step) (aref steps step))
         (factorh (floor 17 2))
         (qh (floor q 2)))
@@ -323,7 +326,7 @@
     (declare (nonneg-fixnum maxints maxintsh q step inc factorh qh)
              (type sieve-array-type a))
     (unless (nth-bit-set-p a factorh)
-      (do* ((istep step (if (= istep 5759) 0 (1+ istep)))
+      (do* ((istep step (if (>= istep 5759) 0 (1+ istep)))
             (ninc (aref steps istep) (aref steps istep))
             (factor (1+ (the nonneg-fixnum (* factorh 2))))
             (i (floor (the nonneg-fixnum (* factor factor)) 2)))
@@ -341,7 +344,7 @@
         (a (sieve-state-a sieve-state))
         (ncount 6)
         (factor 17)
-        (step 1  (if (= step 5759) 0 (1+ step)))
+        (step 1  (if (>= step 5759) 0 (1+ step)))
         (inc (* (aref +steps+ step) 2) (* (the nonneg-fixnum (aref +steps+ step)) 2)))
        ((> factor maxints) ncount)
      (declare (nonneg-fixnum maxints ncount factor inc)
