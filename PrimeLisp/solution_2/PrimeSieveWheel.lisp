@@ -23,12 +23,13 @@
   (optimize (speed 3) (safety 0) (debug 0)))
 
 
-; Thould match machine register size for efficient code.
+; Should match machine register size for efficient code.
 ; Too small hurts a litle, too big hurts a lot
 ; because sbcl will be forced to use bignums
 (defconstant +bits-per-word+ 64)
 
-; apparently some Lisps have non-negative-fixnum, sbcl doesn't
+; Apparently some Lisps have non-negative-fixnum, sbcl doesn't.
+; Also it's not in the ANSI CL specs.
 (deftype nonneg-fixnum ()
   `(integer 0 ,most-positive-fixnum))
 
