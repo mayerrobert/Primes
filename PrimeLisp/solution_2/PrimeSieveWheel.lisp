@@ -22,7 +22,15 @@
 (declaim
   (optimize (speed 3) (safety 0) (debug 0)))
 
+
 (defconstant +bits-per-word+ 64)
+
+(deftype sieve-element-type ()
+  `(unsigned-byte 64))
+
+(deftype sieve-array-type ()
+  `(array sieve-element-type 1))
+
 
 (defconstant +steps+ #(
  8 1 2 3 1 3 2 1 2 3 3 1 3 2 1 3 2 3 4 2 1 2 1 2 7 
@@ -270,7 +278,7 @@
     :maxints maxints
     :a (make-array
          (1+ (floor maxints +bits-per-word+))
-         :element-type '(unsigned-byte 64)
+         :element-type 'sieve-element-type
          :initial-element 0)))
 
 
@@ -286,7 +294,7 @@
          (factorh (floor 17 2))
          (qh (floor q 2)))
     (declare (fixnum maxints maxintsh q step inc factorh qh)
-             (type (array (unsigned-byte 64) 1) a))
+             (type sieve-array-type a))
     (do () ((> factorh qh))
 
       (if (not (zerop (logand (aref a (floor factorh +bits-per-word+))
@@ -325,7 +333,7 @@
          (step 1)
          (inc (* (aref +steps+ step) 2)))
     (declare (fixnum maxints ncount factor inc)
-             (type (array (unsigned-byte 64) 1) a))
+             (type sieve-array-type a))
     (do () ((> factor maxints))
       (when (zerop (logand (aref a (floor factor (* 2 +bits-per-word+)))
                            (expt 2 (mod (floor factor 2) +bits-per-word+))))
