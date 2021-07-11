@@ -32,7 +32,7 @@
   `(unsigned-byte 64))
 
 (deftype sieve-array-type ()
-  `(array sieve-element-type 1))
+  `(simple-array sieve-element-type 1))
 
 
 (defconstant +steps+ #(
@@ -285,16 +285,23 @@
          :initial-element 0)))
 
 
-(defmacro or= (place value)
-  `(setf ,place (logior ,place ,value)))
+(declaim (inline nth-bit-set-p)
+         (inline set-nth-bit))
 
+(defun nth-bit-set-p (a n)
+  (declare (type sieve-array-type a)
+           (fixnum n))
+  (multiple-value-bind (q r) (floor n +bits-per-word+)
+    (declare (fixnum q r))
+    (/= 0 (logand (aref a q) (expt 2 r)))))
 
-(declaim (inline nth-bit-set-p))
-
-(defun nth-bit-set-p (value n)
-  (declare (type sieve-element-type value)
-           (type sieve-bitpos-type n))
-  (/= 0 (logand value (expt 2 n))))
+(defun set-nth-bit (a n)
+  (declare (type sieve-array-type a)
+           (fixnum n))
+  (multiple-value-bind (q r) (floor n +bits-per-word+)
+    (declare (fixnum q r))
+    (setf #1=(aref a q)
+         (logior #1# (expt 2 r)))))
 
 
 (defun run-sieve (sieve-state steps)
@@ -308,19 +315,17 @@
         (inc (aref steps step) (aref steps step))
         (factorh (floor 17 2))
         (qh (floor q 2)))
-       ((> factorh qh))
+       ((> factorh qh) sieve-state)
     (declare (fixnum maxints maxintsh q step inc factorh qh)
              (type sieve-array-type a))
-    (unless (nth-bit-set-p (aref a (floor factorh +bits-per-word+))
-                           (mod factorh +bits-per-word+))
+    (unless (nth-bit-set-p a factorh)
       (do* ((istep step (if (= istep 5759) 0 (1+ istep)))
             (ninc (aref steps istep) (aref steps istep))
             (factor (1+ (* factorh 2)))
             (i (floor (the fixnum (* factor factor)) 2)))
            ((> i maxintsh))
         (declare (fixnum istep ninc factor i))
-        (or= (aref a (floor i +bits-per-word+))
-             (expt 2 (mod i +bits-per-word+)))
+        (set-nth-bit a i)
         (incf i (the fixnum (* factor ninc)))))
 
     (incf factorh inc)))
@@ -328,22 +333,18 @@
 
 (defun count-primes (sieve-state)
   (declare (sieve-state sieve-state))
-  (let* ((maxints (sieve-state-maxints sieve-state))
-         (a (sieve-state-a sieve-state))
-         (ncount 6)
-         (factor 17)
-         (step 1)
-         (inc (* (aref +steps+ step) 2)))
-    (declare (fixnum maxints ncount factor inc)
-             (type sieve-array-type a))
-    (do () ((> factor maxints))
-      (when (zerop (logand (aref a (floor factor (* 2 +bits-per-word+)))
-                           (expt 2 (mod (floor factor 2) +bits-per-word+))))
-        (incf ncount))
-      (incf factor inc)
-      (when (= (incf step) 5760) (setq step 0))
-      (setq inc (* (the fixnum (aref +steps+ step)) 2)))
-    ncount))
+  (do* ((maxints (sieve-state-maxints sieve-state))
+        (a (sieve-state-a sieve-state))
+        (ncount 6)
+        (factor 17)
+        (step 1  (if (= step 5759) 0 (1+ step)))
+        (inc (* (aref +steps+ step) 2) (* (the fixnum (aref +steps+ step)) 2)))
+       ((> factor maxints) ncount)
+     (declare (fixnum maxints ncount factor inc)
+              (type sieve-array-type a))
+     (unless (nth-bit-set-p a (floor factor 2))
+       (incf ncount))
+     (incf factor inc)))
 
 
 ;(disassemble 'nth-bit-set-p)
