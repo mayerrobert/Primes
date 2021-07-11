@@ -1,6 +1,6 @@
 ;;;; Common Lisp port of PrimeC/solution_2/sieve_5760of30030_only_write_read_bits.c by Daniel Spangberg
 ;;;
-;;; approx. 3x speedup over PrimeSieve.lisp, approx. 370x speedup over solution_1
+;;; approx. 3.2x speedup over PrimeSieve.lisp, approx. 395x speedup over solution_1
 ;;;
 ;;; run as:
 ;;;     sbcl --script PrimeSieveWheel.lisp
@@ -9,7 +9,7 @@
 ;;; I have no idea how the wheel algorithm works, I just stole the algorithm.
 ;;;
 ;;; For Common Lisp bit ops see https://lispcookbook.github.io/cl-cookbook/numbers.html#bit-wise-operation,
-;;; although most of the shifts were replaced by "normel" Lisp functions,
+;;; although most of the shifts were replaced by "normal" Lisp functions,
 ;;; e.g. x>>n -> (floor x m), a&b -> (mod a b), 1<<x -> (expt 2 x)
 ;;; because sbcl optimizes these rather efficiently.
 ;;; Only logior and logand remain.
@@ -25,11 +25,15 @@
 
 (defconstant +bits-per-word+ 64)
 
+; apparently some Lisps have non-negative-fixnum, sbcl doesn't
+(deftype nonneg-fixnum ()
+  `(integer 0 ,most-positive-fixnum))
+
 (deftype sieve-bitpos-type ()
-  `(integer 0 63))
+  `(integer 0 ,(1- +bits-per-word+)))
 
 (deftype sieve-element-type ()
-  `(unsigned-byte 64))
+  `(unsigned-byte ,+bits-per-word+))
 
 (deftype sieve-array-type ()
   `(simple-array sieve-element-type 1))
@@ -271,12 +275,12 @@
 
 
 (defstruct sieve-state
-  (maxints -1 :type fixnum :read-only t)
+  (maxints 0 :type nonneg-fixnum :read-only t)
   (a nil :type simple-array))
 
 
 (defun create-sieve (maxints)
-  (declare (fixnum maxints))
+  (declare (nonneg-fixnum maxints))
   (make-sieve-state
     :maxints maxints
     :a (make-array
@@ -290,18 +294,18 @@
 
 (defun nth-bit-set-p (a n)
   (declare (type sieve-array-type a)
-           (fixnum n))
+           (type nonneg-fixnum n))
   (multiple-value-bind (q r) (floor n +bits-per-word+)
-    (declare (fixnum q r))
+    (declare (nonneg-fixnum q) (type sieve-bitpos-type r))
     (/= 0 (logand (aref a q) (expt 2 r)))))
 
 (defun set-nth-bit (a n)
   (declare (type sieve-array-type a)
-           (fixnum n))
+           (type nonneg-fixnum n))
   (multiple-value-bind (q r) (floor n +bits-per-word+)
-    (declare (fixnum q r))
+    (declare (nonneg-fixnum q) (type sieve-bitpos-type r))
     (setf #1=(aref a q)
-         (logior #1# (expt 2 r)))))
+         (logior #1# (expt 2 r)))) 0)
 
 
 (defun run-sieve (sieve-state steps)
@@ -316,17 +320,17 @@
         (factorh (floor 17 2))
         (qh (floor q 2)))
        ((> factorh qh) sieve-state)
-    (declare (fixnum maxints maxintsh q step inc factorh qh)
+    (declare (nonneg-fixnum maxints maxintsh q step inc factorh qh)
              (type sieve-array-type a))
     (unless (nth-bit-set-p a factorh)
       (do* ((istep step (if (= istep 5759) 0 (1+ istep)))
             (ninc (aref steps istep) (aref steps istep))
-            (factor (1+ (* factorh 2)))
-            (i (floor (the fixnum (* factor factor)) 2)))
+            (factor (1+ (the nonneg-fixnum (* factorh 2))))
+            (i (floor (the nonneg-fixnum (* factor factor)) 2)))
            ((> i maxintsh))
-        (declare (fixnum istep ninc factor i))
+        (declare (nonneg-fixnum istep ninc factor i))
         (set-nth-bit a i)
-        (incf i (the fixnum (* factor ninc)))))
+        (incf i (the nonneg-fixnum (* factor ninc)))))
 
     (incf factorh inc)))
 
@@ -338,9 +342,9 @@
         (ncount 6)
         (factor 17)
         (step 1  (if (= step 5759) 0 (1+ step)))
-        (inc (* (aref +steps+ step) 2) (* (the fixnum (aref +steps+ step)) 2)))
+        (inc (* (aref +steps+ step) 2) (* (the nonneg-fixnum (aref +steps+ step)) 2)))
        ((> factor maxints) ncount)
-     (declare (fixnum maxints ncount factor inc)
+     (declare (nonneg-fixnum maxints ncount factor inc)
               (type sieve-array-type a))
      (unless (nth-bit-set-p a (floor factor 2))
        (incf ncount))
@@ -348,6 +352,7 @@
 
 
 ;(disassemble 'nth-bit-set-p)
+;(disassemble 'set-nth-bit)
 ;(disassemble 'run-sieve)
 
 
@@ -355,7 +360,7 @@
        (start (get-internal-real-time))
        (end (+ start (* internal-time-units-per-second 5)))
        result)
-  (declare (fixnum passes))
+  (declare (nonneg-fixnum passes))
 
   (do () ((>= (get-internal-real-time) end))
     (setq result (create-sieve 1000000))
