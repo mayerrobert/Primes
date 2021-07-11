@@ -280,7 +280,7 @@
   (make-sieve-state
     :maxints maxints
     :a (make-array
-         (1+ (floor maxints +bits-per-word+))
+         (1+ (floor (floor maxints +bits-per-word+) 2))
          :element-type 'sieve-element-type
          :initial-element 0)))
 
@@ -305,7 +305,7 @@
 
 
 (defun run-sieve (sieve-state steps)
-  (declare (sieve-state sieve-state) (type (simple-array fixnum 1) steps))
+  (declare (sieve-state sieve-state) (type (simple-vector) steps))
 
   (do* ((maxints (sieve-state-maxints sieve-state))
         (maxintsh (floor maxints 2))
