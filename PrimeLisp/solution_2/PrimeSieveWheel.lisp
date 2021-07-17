@@ -16,14 +16,18 @@
 (defconstant +results+
   '((         10 . 4        )
     (        100 . 25       )
+    (        127 . 31       )
+    (        128 . 31       )
+    (        129 . 31       )
     (       1000 . 168      )
     (      10000 . 1229     )
     (     100000 . 9592     )
     (    1000000 . 78498    )
     (   10000000 . 664579   )
-    (  100000000 . 5761455  )
-    ( 1000000000 . 50847534 )
-    (10000000000 . 455052511))
+    ;(  100000000 . 5761455  )
+    ;( 1000000000 . 50847534 )
+    ;(10000000000 . 455052511)
+    )
   "Historical data for validating our results - the number of primes
    to be found under some limit, such as 168 primes under 1000")
 
@@ -322,19 +326,20 @@
                 (logior #1# (ash 1 (logand i +MASK+))))
           (incf i (the fixnum (* factor ninc)))))
 
-      (incf factorh inc))))
+      (incf factorh inc)))
+  sieve-state)
 
 
 (defun count-primes (sieve-state)
   (declare (sieve-state sieve-state))
   (let* ((maxints (sieve-state-maxints sieve-state))
          (a (sieve-state-a sieve-state))
-         (ncount 6)
+         (ncount (if (<= maxints 10) 4 6))
          (factor 17)
          (step 1)
          (inc (ash (aref +steps+ step) 1)))
     (declare (fixnum maxints ncount factor inc) (type (simple-array sieve-element-type 1) a))
-    (when *list-to* (princ "2, 3, 5, 7, 11, 13, " *error-output*))
+    (when *list-to* (princ (if (<= maxints 10) "2, 3, 5, 7" "2, 3, 5, 7, 11, 13, ") *error-output*))
     (do () ((> factor maxints))
       (when (zerop (logand (aref a (ash factor (+ -1 +SHIFT+)))
                            (ash 1 (logand (ash factor -1) +MASK+))))
@@ -351,9 +356,22 @@
     ncount))
 
 
+(defun test ()
+  "Run run-sieve on all historical data in +results+, return nil if there is any deviation."
+  (let ((result t))
+    (mapc #'(lambda (tupel)
+              (unless (= (cdr tupel) (count-primes (run-sieve (create-sieve (car tupel)) +steps+)))
+                (format *error-output* "ERROR: ~d produces wrong result~%" (car tupel))
+                (setq result nil)))
+            +results+)
+    result))
+
+
 (defun validate (sieve-state)
+  "Invoke test, and then check if sieve-state is correct
+according to the historical data in +results+."
   (let ((hist (cdr (assoc (sieve-state-maxints sieve-state) +results+ :test #'=))))
-    (if (and hist (= (count-primes sieve-state) hist)) "yes" "no")))
+    (if (and (test) hist (= hist (count-primes sieve-state))) "yes" "no")))
 
 
 (let* ((passes 0)
