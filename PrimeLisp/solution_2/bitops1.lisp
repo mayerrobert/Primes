@@ -82,6 +82,8 @@
                   (setf (aref bits num) (logior (aref bits num) pattern))
 
                 finally ; set last word
+                  (setq tmp (- (1- last-excl) (* num +bits-per-word+)))
+                  (unless (zerop tmp)
                   (setq pattern (shl pattern shift))
              
                   (incf total shift)
@@ -90,11 +92,10 @@
                     (setq pattern (logior pattern (ash 1 (- total every-nth))))
                     (decf total every-nth))
 
-                  (setq tmp (- last-excl (* num +bits-per-word+)))
                   (format t "num=~d tmp=~d mask=~8,'0b~%" num tmp (1- (ash 1 tmp)))
                   (setq pattern (logand pattern (1- (ash 1 tmp))))
 
-                  (setf (aref bits num) (logior (aref bits num) pattern))
+                  (setf (aref bits num) (logior (aref bits num) pattern)))
             ))
 
     (loop for num of-type fixnum
@@ -138,11 +139,11 @@
 
 #-nil
 (dolist (every '(2 3 4 5))
-  (let ((first 3)
-        (last 35)
-        (bits (make-array 5 :element-type 'sieve-element-type)))
+  (let ((first 10)
+        (last 33)
+        (bits (make-array 4 :element-type 'sieve-element-type)))
     (format t "first=~d, last=~d, every=~d~%" first last every)
     (set-bits bits first last every)
     (format t "*****~%")
-    (loop for i from 0 to 4 do
+    (loop for i from 0 to 3 do
       (format t "~d ~8,'0b~%" i (aref bits i)))))
