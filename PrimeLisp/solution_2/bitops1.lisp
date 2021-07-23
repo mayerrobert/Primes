@@ -74,8 +74,8 @@
                   (setq pattern (shl pattern shift))
 
                   (incf total shift)
-                  (when (> total every-nth)
-                    (format t "~d: ~d ~d ~8,'0b ~%" num total (- total every-nth) (ash 1 (- total every-nth)))
+                  (when (>= total every-nth)
+                    ;(format t "~d: ~d ~d ~8,'0b ~%" num total (- total every-nth) (ash 1 (- total every-nth)))
                     (setq pattern (logior pattern (ash 1 (- total every-nth))))
                     (decf total every-nth))
 
@@ -85,14 +85,13 @@
                   (setq pattern (shl pattern shift))
              
                   (incf total shift)
-
-                  (setq tmp (- every-nth (mod (* num +bits-per-word+) every-nth)))
-                  (when (> total every-nth)
-                    (format t "~d: ~d ~d ~8,'0b ~%" num total (- total every-nth) (ash 1 (- total every-nth)))
+                  (when (>= total every-nth)
+                    ;(format t "~d: ~d ~d ~8,'0b ~%" num total (- total every-nth) (ash 1 (- total every-nth)))
                     (setq pattern (logior pattern (ash 1 (- total every-nth))))
                     (decf total every-nth))
 
                   (setq tmp (- last-excl (* num +bits-per-word+)))
+                  (format t "num=~d tmp=~d mask=~8,'0b~%" num tmp (1- (ash 1 tmp)))
                   (setq pattern (logand pattern (1- (ash 1 tmp))))
 
                   (setf (aref bits num) (logior (aref bits num) pattern))
@@ -140,7 +139,7 @@
 #-nil
 (dolist (every '(2 3 4 5))
   (let ((first 3)
-        (last 33)
+        (last 35)
         (bits (make-array 5 :element-type 'sieve-element-type)))
     (format t "first=~d, last=~d, every=~d~%" first last every)
     (set-bits bits first last every)
