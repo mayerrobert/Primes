@@ -1,3 +1,13 @@
+
+(declaim
+  (optimize (speed 3) (safety 0) (debug 0) (space 0))
+  (inline shl)
+  (inline bit-pattern)
+  (inline set-nth-bit)
+)
+
+
+
 ;#+64-bit (defconstant +bits-per-word+ 64)
 ;#-64-bit (defconstant +bits-per-word+ 32)
 
@@ -13,19 +23,19 @@
 ; see https://rosettacode.org/wiki/Bitwise_operations#Common_Lisp
 (defun shl (x bits)
   "Compute bitwise left shift of x by 'bits' bits, represented on 'width' bits"
-  (declare (type (unsigned-byte 64) bits))
+  (declare (type sieve-element-type bits))
   (logand (ash x bits)
           (1- (ash 1 +bits-per-word+))))
 
 (defun shr (x bits)
   "Compute bitwise right shift of x by 'bits' bits, represented on 'width' bits"
-  (declare (type (unsigned-byte 64) bits))
+  (declare (type sieve-element-type bits))
   (logand (ash x (- bits))
           (1- (ash 1 +bits-per-word+))))
 
 (defun rotl (x bits)
   "Compute bitwise left rotation of x by 'bits' bits, represented on 'width' bits"
-  (declare (type (unsigned-byte 64) bits))
+  (declare (type sieve-element-type bits))
   (logior (logand (ash x (mod bits +bits-per-word+))
                   (1- (ash 1 +bits-per-word+)))
           (logand (ash x (- (- +bits-per-word+ (mod bits +bits-per-word+))))
@@ -33,22 +43,33 @@
 
 (defun rotr (x bits)
   "Compute bitwise right rotation of x by 'bits' bits, represented on 'width' bits"
-  (declare (type (unsigned-byte 64) bits))
+  (declare (type sieve-element-type bits))
   (logior (logand (ash x (- (mod bits +bits-per-word+)))
                   (1- (ash 1 +bits-per-word+)))
           (logand (ash x (- +bits-per-word+ (mod bits +bits-per-word+)))
                   (1- (ash 1 +bits-per-word+)))))
 
 
+(defun set-nth-bit (a n)
+  (declare (type sieve-array-type a)
+           (type fixnum n))
+  (multiple-value-bind (q r) (floor n +bits-per-word+)
+    (declare (fixnum q r))
+    (setf #1=(aref a q)
+         (logior #1# (expt 2 r)))) 0)
+
+
 (defun bit-pattern (n)
-  (case  n
-    (2 #b0101010101010101010101010101010101010101010101010101010101010101)
-    (3 #b1001001001001001001001001001001001001001001001001001001001001001)
-    (4 #b0001000100010001000100010001000100010001000100010001000100010001)
-    (5 #b0001000010000100001000010000100001000010000100001000010000100001)
-    (6 #b0001000001000001000001000001000001000001000001000001000001000001)
-    (7 #b1000000100000010000001000000100000010000001000000100000010000001)
-    (8 #b0000000100000001000000010000000100000001000000010000000100000001)))
+  (declare (fixnum n))
+  (logand (1- (ash 1 +bits-per-word+))
+    (case  n
+      (2 #b0101010101010101010101010101010101010101010101010101010101010101)
+      (3 #b1001001001001001001001001001001001001001001001001001001001001001)
+      (4 #b0001000100010001000100010001000100010001000100010001000100010001)
+      (5 #b0001000010000100001000010000100001000010000100001000010000100001)
+      (6 #b0001000001000001000001000001000001000001000001000001000001000001)
+      (7 #b1000000100000010000001000000100000010000001000000100000010000001)
+      (8 #b0000000100000001000000010000000100000001000000010000000100000001))))
 
 
 (defun set-bits (bits first-incl last-excl every-nth)
@@ -56,8 +77,8 @@
            (type sieve-array-type bits))
   (if (< every-nth 9)
 
-        (let* ((pattern (bit-pattern every-nth)) (tmp 0) (lastnum 0) (shift 0) (total 0))
-          (declare (type (unsigned-byte 64) pattern) (fixnum tmp lastnum shift))
+        (let* ((pattern (bit-pattern every-nth)) (tmp 0) (shift 0) (total 0))
+          (declare (type sieve-element-type pattern) (fixnum tmp shift total))
 
           ; set first word and prepare pattern
           (multiple-value-bind (q r) (floor first-incl +bits-per-word+)
@@ -73,29 +94,27 @@
                 do ; loop over [2nd to last-excl[
                   (setq pattern (shl pattern shift))
 
-                  (incf total shift)
-                  (when (>= total every-nth)
+                  (when (>= (setq total (+ total shift)) every-nth)
                     ;(format t "~d: ~d ~d ~8,'0b ~%" num total (- total every-nth) (ash 1 (- total every-nth)))
-                    (setq pattern (logior pattern (ash 1 (- total every-nth))))
-                    (decf total every-nth))
+                    (setq pattern (logior pattern (the sieve-element-type (ash 1 (the fixnum (- total every-nth))))))
+                    (setq total (- total every-nth)))
 
                   (setf (aref bits num) (logior (aref bits num) pattern))
 
                 finally ; set last word
                   (setq tmp (- (1- last-excl) (* num +bits-per-word+)))
                   (unless (zerop tmp)
-                  (setq pattern (shl pattern shift))
-             
-                  (incf total shift)
-                  (when (>= total every-nth)
-                    ;(format t "~d: ~d ~d ~8,'0b ~%" num total (- total every-nth) (ash 1 (- total every-nth)))
-                    (setq pattern (logior pattern (ash 1 (- total every-nth))))
-                    (decf total every-nth))
+                    (setq pattern (shl pattern shift))
 
-                  (format t "num=~d tmp=~d mask=~8,'0b~%" num tmp (1- (ash 1 tmp)))
-                  (setq pattern (logand pattern (1- (ash 1 tmp))))
+                    (when (>= (setq total (+ total shift)) every-nth)
+                      ;(format t "~d: ~d ~d ~8,'0b ~%" num total (- total every-nth) (ash 1 (- total every-nth)))
+                      (setq pattern (logior pattern (shl 1 (the sieve-element-type (- total every-nth)))))
+                      (setq total (- total every-nth)))
+  
+                    ;(format t "num=~d tmp=~d mask=~8,'0b~%" num tmp (1- (ash 1 tmp)))
+                    (setq pattern (logand pattern (1- (shl 1 tmp))))
 
-                  (setf (aref bits num) (logior (aref bits num) pattern)))
+                    (setf (aref bits num) (logior (aref bits num) pattern)))
             ))
 
     (loop for num of-type fixnum
