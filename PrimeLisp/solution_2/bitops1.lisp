@@ -97,25 +97,25 @@
                 from (1+ (floor first-incl +bits-per-word+))
                 to (1- (floor last-excl +bits-per-word+))
                 do ; loop over [2nd to last-excl[
-                  (setq pattern (shl pattern shift))
-
-                  (when (>= (setq total (+ total shift)) every-nth)
-                    ;(format t "~d: ~d ~d ~8,'0b ~%" num total (- total every-nth) (ash 1 (- total every-nth)))
-                    (setq pattern (logior pattern (shl 1 (the fixnum (- total every-nth)))))
-                    (setq total (- total every-nth)))
+                  (if (>= (setq total (+ total shift)) every-nth)
+                        (progn
+                          ;(format t "~d: ~d ~d ~8,'0b ~%" num total (- total every-nth) (ash 1 (- total every-nth)))
+                          (setq pattern (logior (shl pattern shift) (shl 1 (the fixnum (- total every-nth)))))
+                          (setq total (- total every-nth)))
+                    (setq pattern (shl pattern shift)))
 
                   (setf (aref bits num) (logior (aref bits num) pattern))
 
                 finally ; set last word
-                  (setq tmp (- (1- last-excl) (* num +bits-per-word+)))
+                  (setq tmp (- last-excl (* num +bits-per-word+)))
                   (when (> tmp 0)
-                    (setq pattern (shl pattern shift))
+                    (if (>= (setq total (+ total shift)) every-nth)
+                          (progn
+                            ;(format t "~d: ~d ~d ~8,'0b ~%" num total (- total every-nth) (ash 1 (- total every-nth)))
+                            (setq pattern (logior pattern (shl 1 (the fixnum (- total every-nth)))))
+                            (setq total (- total every-nth)))
+                      (setq pattern (shl pattern shift)))
 
-                    (when (>= (setq total (+ total shift)) every-nth)
-                      ;(format t "~d: ~d ~d ~8,'0b ~%" num total (- total every-nth) (ash 1 (- total every-nth)))
-                      (setq pattern (logior pattern (shl 1 (the fixnum (- total every-nth)))))
-                      (setq total (- total every-nth)))
-  
                     ;(format t "num=~d tmp=~d mask=~8,'0b~%" num tmp (1- (ash 1 tmp)))
                     (setq pattern (logand pattern (1- (shl 1 tmp))))
 
