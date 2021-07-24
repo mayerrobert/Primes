@@ -16,7 +16,6 @@
 (deftype sieve-array-type ()
   `(simple-array sieve-element-type 1))
 
-
 (deftype sieve-bitpos-type ()
   `(integer 0 ,(1- +bits-per-word+)))
 
@@ -79,20 +78,27 @@
       (14 #b0000000100000000000001000000000000010000000000000100000000000001)
       (15 #b0001000000000000001000000000000001000000000000001000000000000001)
       (16 #b0000000000000001000000000000000100000000000000010000000000000001)
+      (17 #b0000000000001000000000000000010000000000000000100000000000000001)
+      (18 #b0000000001000000000000000001000000000000000001000000000000000001)
+      (19 #b0000001000000000000000000100000000000000000010000000000000000001)
+      (20 #b0001000000000000000000010000000000000000000100000000000000000001)
       )))
 
 
 (defun set-bits (bits first-incl last-excl every-nth)
   (declare (type fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
-  (if (and (<= every-nth 16)
-           (> (- last-excl first-incl) +bits-per-word+))
+  (if (<= every-nth 20)
 
         (let* ((pattern (bit-pattern every-nth)) (tmp 0) (shift 0) (total 0))
           (declare (type sieve-element-type pattern) (fixnum tmp shift total))
 
           ; set first word and prepare pattern
           (multiple-value-bind (q r) (floor first-incl +bits-per-word+)
+            (when (< last-excl +bits-per-word+)
+              (setf (aref bits q) (logior (aref bits q)
+                                          (logand (shl pattern r) (1- (shl 1 last-excl)))))
+              (return-from set-bits nil))
             (setf (aref bits q) (logior (aref bits q) (shl pattern r)))
             (setq total (mod r every-nth))
             (setq pattern (shl pattern total))
@@ -105,7 +111,6 @@
                 do ; loop over [2nd to last-excl[
                   (if (>= (setq total (+ total shift)) every-nth)
                         (progn
-                          ;(format t "~d: ~d ~d ~8,'0b ~%" num total (- total every-nth) (ash 1 (- total every-nth)))
                           (setq pattern (logior (shl pattern shift) (shl 1 (the fixnum (- total every-nth)))))
                           (setq total (- total every-nth)))
                     (setq pattern (shl pattern shift)))
@@ -116,13 +121,9 @@
                   (setq tmp (- last-excl (* num +bits-per-word+)))
                   (when (> tmp 0)
                     (if (>= (setq total (+ total shift)) every-nth)
-                          (progn
-                            ;(format t "~d: ~d ~d ~8,'0b ~%" num total (- total every-nth) (ash 1 (- total every-nth)))
-                            (setq pattern (logior (shl pattern shift) (shl 1 (the fixnum (- total every-nth)))))
-                            (setq total (- total every-nth)))
+                          (setq pattern (logior (shl pattern shift) (shl 1 (the fixnum (- total every-nth)))))
                       (setq pattern (shl pattern shift)))
 
-                    ;(format t "num=~d tmp=~d mask=~8,'0b~%" num tmp (1- (ash 1 tmp)))
                     (setq pattern (logand pattern (1- (shl 1 tmp))))
 
                     (setf (aref bits num) (logior (aref bits num) pattern)))
