@@ -79,7 +79,8 @@
 (defun set-bits (bits first-incl last-excl every-nth)
   (declare (type fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
-  (if (< every-nth 9)
+  (if (and (< every-nth 9)
+           (> (- last-excl first-incl) +bits-per-word+))
 
         (let* ((pattern (bit-pattern every-nth)) (tmp 0) (shift 0) (total 0))
           (declare (type sieve-element-type pattern) (fixnum tmp shift total))
@@ -100,19 +101,19 @@
 
                   (when (>= (setq total (+ total shift)) every-nth)
                     ;(format t "~d: ~d ~d ~8,'0b ~%" num total (- total every-nth) (ash 1 (- total every-nth)))
-                    (setq pattern (logior pattern (the sieve-element-type (ash 1 (the fixnum (- total every-nth))))))
+                    (setq pattern (logior pattern (shl 1 (the fixnum (- total every-nth)))))
                     (setq total (- total every-nth)))
 
                   (setf (aref bits num) (logior (aref bits num) pattern))
 
                 finally ; set last word
                   (setq tmp (- (1- last-excl) (* num +bits-per-word+)))
-                  (unless (zerop tmp)
+                  (when (> tmp 0)
                     (setq pattern (shl pattern shift))
 
                     (when (>= (setq total (+ total shift)) every-nth)
                       ;(format t "~d: ~d ~d ~8,'0b ~%" num total (- total every-nth) (ash 1 (- total every-nth)))
-                      (setq pattern (logior pattern (shl 1 (the sieve-element-type (- total every-nth)))))
+                      (setq pattern (logior pattern (shl 1 (the fixnum (- total every-nth)))))
                       (setq total (- total every-nth)))
   
                     ;(format t "num=~d tmp=~d mask=~8,'0b~%" num tmp (1- (ash 1 tmp)))
@@ -163,7 +164,7 @@
 #-nil
 (dolist (every '(2 3 4 5))
   (let ((first 10)
-        (last 33)
+        (last 13)
         (bits (make-array 4 :element-type 'sieve-element-type)))
     (format t "first=~d, last=~d, every=~d~%" first last every)
     (set-bits bits first last every)
@@ -172,5 +173,3 @@
       (format t "~d ~8,'0b~%" i (aref bits i)))))
 
 (disassemble 'set-bits)
-
-(disassemble 'shl)
