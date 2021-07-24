@@ -112,7 +112,7 @@
                     (if (>= (setq total (+ total shift)) every-nth)
                           (progn
                             ;(format t "~d: ~d ~d ~8,'0b ~%" num total (- total every-nth) (ash 1 (- total every-nth)))
-                            (setq pattern (logior pattern (shl 1 (the fixnum (- total every-nth)))))
+                            (setq pattern (logior (shl pattern shift) (shl 1 (the fixnum (- total every-nth)))))
                             (setq total (- total every-nth)))
                       (setq pattern (shl pattern shift)))
 
