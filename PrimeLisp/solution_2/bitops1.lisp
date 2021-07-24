@@ -20,22 +20,26 @@
   `(simple-array sieve-element-type 1))
 
 
+(deftype sieve-bitpos-type ()
+  `(integer 0 ,(1- +bits-per-word+)))
+
+
 ; see https://rosettacode.org/wiki/Bitwise_operations#Common_Lisp
 (defun shl (x bits)
   "Compute bitwise left shift of x by 'bits' bits, represented on 'width' bits"
-  (declare (type sieve-element-type bits))
+  (declare (type sieve-element-type x) (type sieve-bitpos-type bits))
   (logand (ash x bits)
           (1- (ash 1 +bits-per-word+))))
 
 (defun shr (x bits)
   "Compute bitwise right shift of x by 'bits' bits, represented on 'width' bits"
-  (declare (type sieve-element-type bits))
+  (declare (type sieve-element-type x) (type sieve-bitpos-type bits))
   (logand (ash x (- bits))
           (1- (ash 1 +bits-per-word+))))
 
 (defun rotl (x bits)
   "Compute bitwise left rotation of x by 'bits' bits, represented on 'width' bits"
-  (declare (type sieve-element-type bits))
+  (declare (type sieve-element-type x) (type sieve-bitpos-type bits))
   (logior (logand (ash x (mod bits +bits-per-word+))
                   (1- (ash 1 +bits-per-word+)))
           (logand (ash x (- (- +bits-per-word+ (mod bits +bits-per-word+))))
@@ -43,7 +47,7 @@
 
 (defun rotr (x bits)
   "Compute bitwise right rotation of x by 'bits' bits, represented on 'width' bits"
-  (declare (type sieve-element-type bits))
+  (declare (type sieve-element-type x) (type sieve-bitpos-type bits))
   (logior (logand (ash x (- (mod bits +bits-per-word+)))
                   (1- (ash 1 +bits-per-word+)))
           (logand (ash x (- +bits-per-word+ (mod bits +bits-per-word+)))
@@ -166,3 +170,7 @@
     (format t "*****~%")
     (loop for i from 0 to 3 do
       (format t "~d ~8,'0b~%" i (aref bits i)))))
+
+(disassemble 'set-bits)
+
+(disassemble 'shl)
