@@ -340,13 +340,12 @@
   (do* ((maxints (sieve-state-maxints sieve-state))
         (maxintsh (floor maxints 2))
         (a (sieve-state-a sieve-state))
-        (q (1+ (isqrt maxints)))
         (step 1  (if (>= step 5759) 0 (1+ step)))
         (inc (aref steps step) (aref steps step))
         (factorh (floor 17 2))
-        (qh (floor q 2)))
+        (qh (floor (1+ (isqrt maxints)) 2)))
        ((> factorh qh) sieve-state)
-    (declare (nonneg-fixnum maxints maxintsh q step inc factorh qh)
+    (declare (nonneg-fixnum maxints maxintsh step inc factorh qh)
              (type sieve-array-type a))
     (unless (nth-bit-set-p a factorh)
       (do* ((istep step (if (>= istep 5759) 0 (1+ istep)))
@@ -419,4 +418,4 @@ according to the historical data in +results+."
     (format *error-output* "Algorithm: wheel optimized  Passes: ~d, Time: ~f, Avg: ~f ms, Count: ~d  Valid: ~A~%"
             passes duration (* 1000 avg) (count-primes result) (let ((*list-to* nil)) (validate result)))
 
-    (format t "mayerrobert-cl-wheel-opt;~d;~f;1;algorithm=wheel,faithful=no,bits=1~%" passes duration)))
+    (format t "mayerrobert-cl-wheel-opt;~d;~f;1;algorithm=wheel,faithful=yes,bits=1~%" passes duration)))

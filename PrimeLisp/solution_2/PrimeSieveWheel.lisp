@@ -280,14 +280,19 @@
 ))
 
 
-(defstruct sieve-state
-  (maxints -1 :type fixnum :read-only t)
-  (a nil :type simple-array :read-only t))
+(defclass sieve-state ()
+  ((maxints :initarg :maxints
+            :type nonneg-fixnum
+            :accessor sieve-state-maxints)
+
+   (a       :initarg :a
+            :type simple-array
+            :accessor sieve-state-a)))
 
 
 (defun create-sieve (maxints)
-  (declare (fixnum maxints))
-  (make-sieve-state
+  (declare (nonneg-fixnum maxints))
+  (make-instance 'sieve-state
     :maxints maxints
     :a (make-array
          (1+ (floor (floor maxints +bits-per-word+) 2))
@@ -390,4 +395,4 @@ according to the historical data in +results+."
     (format *error-output* "Algorithm: wheel  Passes: ~d  Time: ~f Avg: ~f ms Count: ~d  Valid: ~A~%"
             passes duration (* 1000 avg) (count-primes result) (let ((*list-to* nil)) (validate result)))
 
-    (format t "mayerrobert-cl-wheel;~d;~f;1;algorithm=wheel,faithful=no,bits=1~%" passes duration)))
+    (format t "mayerrobert-cl-wheel;~d;~f;1;algorithm=wheel,faithful=yes,bits=1~%" passes duration)))
