@@ -306,11 +306,9 @@
   (let* ((maxints (sieve-state-maxints sieve-state))
          (maxintsh (ash maxints -1))
          (a (sieve-state-a sieve-state))
-         (q (1+ (isqrt maxints)))
-         
          (factorh (ash 17 -1))
-         (qh (ash q -1)))
-    (declare (fixnum maxints maxintsh q factorh qh)
+         (qh (ash (ceiling (sqrt maxints)) -1)))
+    (declare (fixnum maxints maxintsh factorh qh)
              (type (simple-array sieve-element-type 1) a))
     (do* ((step 1 (if (>= step 5759) 0 (1+ step)))
           (inc (aref steps step) (aref steps step)))

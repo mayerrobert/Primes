@@ -194,8 +194,8 @@
 
   (let* ((rawbits (sieve-state-a sieve-state))
          (sieve-size (sieve-state-maxints sieve-state))
-         (sieve-sizeh (floor (1+ sieve-size) 2))
-         (qh (floor (1+ (isqrt sieve-size)) 2)))
+         (sieve-sizeh (ceiling sieve-size 2))
+         (qh (ceiling (floor (sqrt sieve-size)) 2)))
     (declare (fixnum sieve-size sieve-sizeh qh) (type sieve-array-type rawbits))
     (do ((factor 3)
          (factorh 1))

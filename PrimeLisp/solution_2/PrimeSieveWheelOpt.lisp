@@ -343,7 +343,7 @@
         (step 1  (if (>= step 5759) 0 (1+ step)))
         (inc (aref steps step) (aref steps step))
         (factorh (floor 17 2))
-        (qh (floor (1+ (isqrt maxints)) 2)))
+        (qh (floor (ceiling (sqrt maxints)) 2)))
        ((> factorh qh) sieve-state)
     (declare (nonneg-fixnum maxints maxintsh step inc factorh qh)
              (type sieve-array-type a))

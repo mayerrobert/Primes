@@ -46,7 +46,7 @@
   (declare (fixnum maxints))
   (make-instance 'sieve-state
     :maxints maxints
-    :a (make-array (floor (1+ maxints) 2)
+    :a (make-array (ceiling maxints 2)
          :element-type 'bit
          :initial-element 0)))
 
@@ -72,7 +72,7 @@
 
       (loop for num fixnum
             from (floor (the fixnum (* factor factor)) 2)
-            to (1- (floor (1+ sieve-size) 2))
+            to (1- (ceiling sieve-size 2))
             by factor
             do
         (setf (sbit rawbits num) 1))
