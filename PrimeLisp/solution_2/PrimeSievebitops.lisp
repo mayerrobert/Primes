@@ -102,7 +102,7 @@
     (declare (fixnum sieve-size sieve-sizeh q qh) (type sieve-array-type rawbits))
     (do ((factor 0)
          (factorh 1))
-        ((> factorh qh))
+        (nil)
       (declare (fixnum factor factorh))
 
       (loop for num of-type fixnum
@@ -111,6 +111,9 @@
             while (nth-bit-set-p rawbits num)
             finally (setq factor (1+ (* num 2)))
                     (setq factorh (1+ num)))
+
+      (when (> factorh qh)
+        (return-from run-sieve sieve-state))
 
       (set-bits rawbits (floor (the fixnum (* factor factor)) 2) sieve-sizeh factor))
     sieve-state))
