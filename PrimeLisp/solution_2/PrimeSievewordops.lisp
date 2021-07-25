@@ -119,6 +119,18 @@
       (18 #b0000000001000000000000000001000000000000000001000000000000000001)
       (19 #b0000001000000000000000000100000000000000000010000000000000000001)
       (20 #b0001000000000000000000010000000000000000000100000000000000000001)
+      (21 #b1000000000000000000001000000000000000000001000000000000000000001)
+      (22 #b0000000000000000000100000000000000000000010000000000000000000001)
+      (23 #b0000000000000000010000000000000000000000100000000000000000000001)
+      (24 #b0000000000000001000000000000000000000001000000000000000000000001)
+      (25 #b0000000000000100000000000000000000000010000000000000000000000001)
+      (26 #b0000000000010000000000000000000000000100000000000000000000000001)
+      (27 #b0000000001000000000000000000000000001000000000000000000000000001)
+      (28 #b0000000100000000000000000000000000010000000000000000000000000001)
+      (29 #b0000010000000000000000000000000000100000000000000000000000000001)
+      (30 #b0001000000000000000000000000000001000000000000000000000000000001)
+      (31 #b0100000000000000000000000000000010000000000000000000000000000001)
+      (32 #b0000000000000000000000000000000100000000000000000000000000000001)
       )))
 
 
@@ -126,7 +138,7 @@
   "Set every every-nth bit in array bits between first-incl and last-excl."
   (declare (type fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
-  (if (<= every-nth 20)
+  (if (<= every-nth 32)
 
         (let* ((pattern (bit-pattern every-nth)) (tmp 0) (shift 0) (total 0))
           (declare (type sieve-element-type pattern) (fixnum tmp shift total))
@@ -151,7 +163,7 @@
                 do
                   (if (>= (setq total (+ total shift)) every-nth)
                         (progn
-                          (setq pattern (logior (shl pattern shift) (shl 1 (the fixnum (- total every-nth)))))
+                          (setq pattern (logior (shl pattern shift) (shl 1 (- total every-nth))))
                           (setq total (- total every-nth)))
                     (setq pattern (shl pattern shift)))
 
@@ -161,7 +173,7 @@
                   (setq tmp (- last-excl (* num +bits-per-word+)))
                   (when (> tmp 0)
                     (if (>= (setq total (+ total shift)) every-nth)
-                          (setq pattern (logior (shl pattern shift) (shl 1 (the fixnum (- total every-nth)))))
+                          (setq pattern (logior (shl pattern shift) (shl 1 (- total every-nth))))
                       (setq pattern (shl pattern shift)))
 
                     ; adjust pattern so that only up to last-excl bits will be changed
