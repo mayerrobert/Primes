@@ -1,7 +1,7 @@
 ;;;; based on sieve_1of2.c by  by Daniel Spangberg, but sets bits one word at a time
 ;;;
 ;;; run as:
-;;;     sbcl --script PrimeSievebitops.lisp
+;;;     sbcl --script PrimeSievewordops.lisp
 ;;;
 
 
