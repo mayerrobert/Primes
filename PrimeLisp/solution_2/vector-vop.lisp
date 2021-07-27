@@ -197,40 +197,62 @@
     (:temporary (:sc unsigned-reg) old)
     (:temporary (:sc unsigned-reg :offset ecx-offset) ecx)
     (:generator 24
-      (aver (zerop offset))
-      (move word-index index)
-      (inst shr word-index bit-shift)
-      (inst mov old
-            (ea (- (* vector-data-offset n-word-bytes) other-pointer-lowtag)
-                object word-index n-word-bytes))
-      (move ecx index)
-      ;; We used to mask ECX for all values of BITS, but since
-      ;; Intel's documentation says that the chip will mask shift
-      ;; and rotate counts by 63 automatically, we can safely move
-      ;; the masking operation under the protection of this UNLESS
-      ;; in the bit-vector case.  --njf, 2006-07-14
-      ;,@(unless (= 1 1)
-      ;    `((inst and ecx ,(1- elements-per-word))
-      ;      (inst shl ecx ,(1- (integer-length 1)))))
-      (inst ror old :cl)
-      (unless (and (sc-is value immediate)
-                   (= (tn-value value) (1- (ash 1 1))))
-        (inst and old (lognot (1- (ash 1 1)))))
       (sc-case value
         (immediate
-         (unless (zerop (tn-value value))
-           (inst or old (logand (tn-value value) (1- (ash 1 1))))))
+          (aver (zerop offset))
+          (move word-index index)
+          (inst shr word-index bit-shift)
+          (inst mov old
+                (ea (- (* vector-data-offset n-word-bytes) other-pointer-lowtag)
+                    object word-index n-word-bytes))
+          (move ecx index)
+          (inst ror old :cl)
+          (unless (= (tn-value value) (1- (ash 1 1)))
+            (inst and old (lognot (1- (ash 1 1)))))
+          (unless (zerop (tn-value value))
+            (inst or old (logand (tn-value value) (1- (ash 1 1)))))
+
+          (inst rol old :cl)
+          (inst mov (ea (- (* vector-data-offset n-word-bytes) other-pointer-lowtag)
+                        object word-index n-word-bytes)
+                old)
+          (inst mov result (tn-value value)))
+
         (unsigned-reg
-         (inst or old value)))
-      (inst rol old :cl)
-      (inst mov (ea (- (* vector-data-offset n-word-bytes) other-pointer-lowtag)
-                    object word-index n-word-bytes)
-            old)
-      (sc-case value
-        (immediate
-         (inst mov result (tn-value value)))
-        (unsigned-reg
-         (move result value))))))
+          (aver (zerop offset))
+          (move word-index index)
+          (inst shr word-index bit-shift)
+          (inst mov old
+                (ea (- (* vector-data-offset n-word-bytes) other-pointer-lowtag)
+                    object word-index n-word-bytes))
+          (move ecx index)
+          ;; We used to mask ECX for all values of BITS, but since
+          ;; Intel's documentation says that the chip will mask shift
+          ;; and rotate counts by 63 automatically, we can safely move
+          ;; the masking operation under the protection of this UNLESS
+          ;; in the bit-vector case.  --njf, 2006-07-14
+          ;,@(unless (= 1 1)
+          ;    `((inst and ecx ,(1- elements-per-word))
+          ;      (inst shl ecx ,(1- (integer-length 1)))))
+          (inst ror old :cl)
+          (unless (and (sc-is value immediate)
+                       (= (tn-value value) (1- (ash 1 1))))
+            (inst and old (lognot (1- (ash 1 1)))))
+          (sc-case value
+            (immediate
+             (unless (zerop (tn-value value))
+               (inst or old (logand (tn-value value) (1- (ash 1 1))))))
+            (unsigned-reg
+             (inst or old value)))
+          (inst rol old :cl)
+          (inst mov (ea (- (* vector-data-offset n-word-bytes) other-pointer-lowtag)
+                        object word-index n-word-bytes)
+                old)
+          (sc-case value
+            (immediate
+             (inst mov result (tn-value value)))
+            (unsigned-reg
+             (move result value))))))))
 
 
 (in-package "CL-USER")
