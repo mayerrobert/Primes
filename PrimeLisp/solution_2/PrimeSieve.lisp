@@ -5,6 +5,9 @@
 ;;;
 
 
+(load "vector-vop.lisp")
+
+
 (declaim
   (optimize (speed 3) (safety 0) (debug 0) (space 0)))
 
