@@ -202,21 +202,26 @@
           (aver (zerop offset))
           (move word-index index)
           (inst shr word-index bit-shift)
-          (inst mov old
-                (ea (- (* vector-data-offset n-word-bytes) other-pointer-lowtag)
-                    object word-index n-word-bytes))
           (move ecx index)
-          (inst ror old :cl)
-          (unless (= (tn-value value) (1- (ash 1 1)))
-            (inst and old (lognot (1- (ash 1 1)))))
-          (unless (zerop (tn-value value))
-            (inst or old (logand (tn-value value) (1- (ash 1 1)))))
 
-          (inst rol old :cl)
-          (inst mov (ea (- (* vector-data-offset n-word-bytes) other-pointer-lowtag)
-                        object word-index n-word-bytes)
+          (unless (= (tn-value value) (1- (ash 1 1)))
+            ; clear bit
+            (inst mov old (lognot (1- (ash 1 1))))
+            (inst rol old :cl)
+            (inst and (ea (- (* vector-data-offset n-word-bytes) other-pointer-lowtag)
+                          object word-index n-word-bytes)
+                old))
+
+          (unless (zerop (tn-value value))
+            ; set bit
+            (inst mov old 1)
+            (inst rol old :cl)
+            (inst or (ea (- (* vector-data-offset n-word-bytes) other-pointer-lowtag)
+                         object word-index n-word-bytes)
                 old)
-          (inst mov result (tn-value value)))
+            )
+            
+            (inst mov result (tn-value value)))
 
         (unsigned-reg
           (aver (zerop offset))
@@ -255,10 +260,14 @@
              (move result value))))))))
 
 
-(in-package "CL-USER")
+;(in-package "CL-USER")
 
-(declaim (optimize speed (safety 0)))
-
-(disassemble (lambda (a n)
-               (declare (type simple-bit-vector a) (fixnum n))
-               (setf (aref a n) 1)))
+;(declaim (optimize speed (safety 0)))
+;
+;(disassemble (lambda (a n)
+;               (declare (type simple-bit-vector a) (fixnum n))
+;               (setf (aref a n) 1)))
+;
+;(disassemble (lambda (a n)
+;               (declare (type simple-bit-vector a) (fixnum n))
+;               (setf (aref a n) 0)))
