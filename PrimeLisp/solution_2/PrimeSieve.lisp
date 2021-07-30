@@ -5,7 +5,7 @@
 ;;;
 
 
-(load "vector-vop.lisp")
+;(load "vector-vop.lisp")
 
 
 (declaim
@@ -55,11 +55,11 @@
 
   (let* ((rawbits (sieve-state-a sieve-state))
          (sieve-size (sieve-state-maxints sieve-state))
-         (q (floor (sqrt sieve-size))))
-    (declare (fixnum sieve-size q) (type simple-bit-vector rawbits))
-    (do ((factor 3))
-        ((> factor q))
-      (declare (fixnum factor))
+         (end (1- (ceiling sieve-size 2)))
+         (q (floor (sqrt sieve-size)))
+         (factor 3))
+    (declare (fixnum sieve-size end q factor) (type simple-bit-vector rawbits))
+    (loop while (<= factor q) do
 
       (loop for num fixnum
             from factor
@@ -71,7 +71,7 @@
 
       (loop for num fixnum
             from (floor (the fixnum (* factor factor)) 2)
-            to (1- (ceiling sieve-size 2))
+            to end
             by factor
             do
         (setf (sbit rawbits num) 1))
