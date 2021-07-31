@@ -65,9 +65,8 @@
             from factor
             to q
             by 2
-            until (when (zerop (sbit rawbits (floor num 2)))
-                    (setq factor num)
-                    t))
+            until (zerop (sbit rawbits (floor num 2)))
+            finally (setq factor num))
 
       (loop for num fixnum
             from (floor (the fixnum (* factor factor)) 2)
