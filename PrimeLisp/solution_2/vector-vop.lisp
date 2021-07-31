@@ -198,6 +198,7 @@
     (:temporary (:sc unsigned-reg :offset ecx-offset) ecx)
     (:generator 24
       (sc-case value
+        #-nil
         (immediate
           (aver (zerop offset))
           (move word-index index)
@@ -218,9 +219,26 @@
             (inst rol old :cl)
             (inst or (ea (- (* vector-data-offset n-word-bytes) other-pointer-lowtag)
                          object word-index n-word-bytes)
-                old)
-            )
-            
+                old))
+
+            (inst mov result (tn-value value)))
+
+        #+nil
+        (immediate
+          (aver (zerop offset))
+
+          (unless (= (tn-value value) (1- (ash 1 1)))
+            ; clear bit
+            (inst btr (ea (- (* vector-data-offset n-word-bytes) other-pointer-lowtag)
+                          object)
+                index))
+
+          (unless (zerop (tn-value value))
+            ; set bit
+            (inst bts (ea (- (* vector-data-offset n-word-bytes) other-pointer-lowtag)
+                         object)
+                index))
+
             (inst mov result (tn-value value)))
 
         (unsigned-reg
