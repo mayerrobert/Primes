@@ -62,6 +62,7 @@
 
 
 (defun nth-bit-set-p (a n)
+  "Returns t if n-th bit is set in array a, nil otherwise."
   (declare (sieve-array-type a)
            (fixnum n))
   (multiple-value-bind (q r) (floor n +bits-per-word+)
@@ -69,6 +70,7 @@
     (logbitp r (aref a q))))
 
 (defun set-nth-bit (a n)
+  "Set n-th bit in array a to 1."
   (declare (type sieve-array-type a)
            (type fixnum n))
   (multiple-value-bind (q r) (floor n +bits-per-word+)
@@ -78,6 +80,7 @@
 
 
 (defun set-bits (bits first-incl last-excl every-nth)
+  "Set every every-nth bit in array bits between first-incl and last-excl."
   (declare (type fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
   (loop for num of-type fixnum
@@ -100,15 +103,15 @@
         (nil)
       (declare (fixnum factor factorh))
 
+      (when (> factorh qh)
+        (return-from run-sieve sieve-state))
+
       (loop for num of-type fixnum
             from factorh
             to qh
             while (nth-bit-set-p rawbits num)
             finally (setq factor (1+ (* num 2)))
                     (setq factorh (1+ num)))
-
-      (when (> factorh qh)
-        (return-from run-sieve sieve-state))
 
       (set-bits rawbits (floor (the fixnum (* factor factor)) 2) sieve-sizeh factor))
     sieve-state))

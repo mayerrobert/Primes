@@ -91,8 +91,6 @@
          (logior #1# (expt 2 r)))) 0)
 
 
-
-
 (defmacro patterns ()
   "Expand into a vector of bit-patterns."
 
@@ -166,8 +164,7 @@
           from first-incl
           to (1- last-excl)
           by every-nth
-          do
-      (set-nth-bit bits num))))
+          do (set-nth-bit bits num))))
 
 
 (defun run-sieve (sieve-state)
@@ -178,10 +175,13 @@
          (sieve-sizeh (ceiling sieve-size 2))
          (qh (ceiling (floor (sqrt sieve-size)) 2)))
     (declare (fixnum sieve-size sieve-sizeh qh) (type sieve-array-type rawbits))
-    (do ((factor 3)
+    (do ((factor 0)
          (factorh 1))
         (nil)
       (declare (fixnum factor factorh))
+
+      (when (> factorh qh)
+        (return-from run-sieve sieve-state))
 
       (loop for num of-type fixnum
             from factorh
@@ -189,9 +189,6 @@
             while (nth-bit-set-p rawbits num)
             finally (setq factor (1+ (* num 2)))
                     (setq factorh (1+ num)))
-
-      (when (> factorh qh)
-        (return-from run-sieve sieve-state))
 
       (set-bits rawbits (floor (the fixnum (* factor factor)) 2) sieve-sizeh factor))
     sieve-state))
