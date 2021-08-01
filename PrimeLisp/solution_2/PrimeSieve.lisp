@@ -55,7 +55,7 @@
 
   (let* ((rawbits (sieve-state-a sieve-state))
          (sieve-size (sieve-state-maxints sieve-state))
-         (end (1- (ceiling sieve-size 2)))
+         (end (ceiling sieve-size 2))
          (q (floor (sqrt sieve-size)))
          (factor 3))
     (declare (fixnum sieve-size end q factor) (type simple-bit-vector rawbits))
@@ -68,12 +68,22 @@
             until (zerop (sbit rawbits (floor num 2)))
             finally (setq factor num))
 
-      (loop for num fixnum
-            from (floor (the fixnum (* factor factor)) 2)
-            to end
-            by factor
-            do
-        (setf (sbit rawbits num) 1))
+      (let* ((i0 (floor (the fixnum (* factor factor)) 2))
+             (i1 (+ i0 factor))
+             (i2 (+ i1 factor))
+             (i3 (+ i2 factor))
+             (factor4 (* 4 factor)))
+        (declare (fixnum i0 i1 i2 i3 factor4))
+
+        (loop while (< i3 end)
+              do (setf (sbit rawbits i0) 1)  (incf i0 factor4)
+                 (setf (sbit rawbits i1) 1)  (incf i1 factor4)
+                 (setf (sbit rawbits i2) 1)  (incf i2 factor4)
+                 (setf (sbit rawbits i3) 1)  (incf i3 factor4))
+    
+        (loop while (< i0 end)
+              do (setf (sbit rawbits i0) 1)
+                 (incf i0 factor)))
 
       (incf factor 2))
     sieve-state))

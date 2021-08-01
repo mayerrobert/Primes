@@ -83,11 +83,22 @@
   "Set every every-nth bit in array bits between first-incl and last-excl."
   (declare (type fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
-  (loop for num of-type fixnum
-        from first-incl
-        to (1- last-excl)
-        by every-nth
-        do (set-nth-bit bits num)))
+  (let* ((i0 first-incl)
+         (i1 (+ i0 every-nth))
+         (i2 (+ i1 every-nth))
+         (i3 (+ i2 every-nth))
+         (factor4 (* 4 every-nth)))
+    (declare (fixnum i0 i1 i2 i3 factor4))
+
+    (loop while (< i3 last-excl)
+          do (set-nth-bit bits i0)   (incf i0 factor4)
+             (set-nth-bit bits i1)   (incf i1 factor4)
+             (set-nth-bit bits i2)   (incf i2 factor4)
+             (set-nth-bit bits i3)   (incf i3 factor4))
+
+    (loop while (< i0 last-excl)
+          do (set-nth-bit bits i0)
+             (incf i0 every-nth))))
 
 
 (defun run-sieve (sieve-state)
