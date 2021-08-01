@@ -107,15 +107,11 @@
   (let* ((rawbits (sieve-state-a sieve-state))
          (sieve-size (sieve-state-maxints sieve-state))
          (sieve-sizeh (ceiling sieve-size 2))
+         (factor 0)
+         (factorh 1)
          (qh (ceiling (floor (sqrt sieve-size)) 2)))
-    (declare (fixnum sieve-size sieve-sizeh qh) (type sieve-array-type rawbits))
-    (do ((factor 0)
-         (factorh 1))
-        (nil)
-      (declare (fixnum factor factorh))
-
-      (when (> factorh qh)
-        (return-from run-sieve sieve-state))
+    (declare (fixnum sieve-size sieve-sizeh factor factorh qh) (type sieve-array-type rawbits))
+    (loop while (<= factorh qh) do
 
       (loop for num of-type fixnum
             from factorh
