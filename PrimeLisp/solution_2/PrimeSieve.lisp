@@ -5,7 +5,8 @@
 ;;;
 
 
-;(load "vector-vop.lisp")
+;(load "bitvector-set-2.0.0.lisp")
+;(load "bitvector-set-2.1.7.lisp")
 
 
 (declaim
@@ -144,6 +145,7 @@ according to the historical data in +results+."
     (format t "mayerrobert-cl;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
 
 
+#+nil
 ; Same timed loop again, this time there is "#." before the invocation of run-sieve.
 ; See http://clhs.lisp.se/Body/02_dh.htm for what #. does.
 (let* ((passes 0)
@@ -163,3 +165,6 @@ according to the historical data in +results+."
             passes duration (* 1000 avg) (count-primes result) (validate result))
 
     (format t "mayerrobert-cl-hashdot;~d;~f;1;algorithm=base,faithful=no,bits=1~%" passes duration)))
+
+
+;(disassemble 'run-sieve)
