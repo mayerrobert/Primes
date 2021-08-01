@@ -132,8 +132,7 @@ according to the historical data in +results+."
   (declare (fixnum passes))
 
   (do () ((>= (get-internal-real-time) end))
-    (setq result (create-sieve 1000000))
-    (run-sieve result)
+    (setq result (run-sieve (create-sieve 1000000)))
     (incf passes))
 
   (let* ((duration  (/ (- (get-internal-real-time) start) internal-time-units-per-second))
@@ -143,3 +142,24 @@ according to the historical data in +results+."
             passes duration (* 1000 avg) (count-primes result) (validate result))
 
     (format t "mayerrobert-cl;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
+
+
+; Same timed loop again, this time there is "#." before the invocation of run-sieve.
+; See http://clhs.lisp.se/Body/02_dh.htm for what #. does.
+(let* ((passes 0)
+       (start (get-internal-real-time))
+       (end (+ start (* internal-time-units-per-second 5)))
+       result)
+  (declare (fixnum passes))
+
+  (do () ((>= (get-internal-real-time) end))
+    (setq result #. (run-sieve (create-sieve 1000000)))
+    (incf passes))
+
+  (let* ((duration  (/ (- (get-internal-real-time) start) internal-time-units-per-second))
+         (avg (/ duration passes)))
+    (when *list-to* (list-primes result))
+    (format *error-output* "Algorithm: base  Passes: ~d  Time: ~f  Avg: ~f ms  Count: ~d  Valid: ~A~%"
+            passes duration (* 1000 avg) (count-primes result) (validate result))
+
+    (format t "mayerrobert-cl-hashdot;~d;~f;1;algorithm=base,faithful=no,bits=1~%" passes duration)))
