@@ -63,6 +63,7 @@
     (declare (fixnum sieve-size end q factor) (type simple-bit-vector rawbits))
     (loop while (<= factor q) do
 
+#+nil
       (loop for num fixnum
             from factor
             to q
@@ -70,6 +71,9 @@
             until (zerop (sbit rawbits (floor num 2)))
             finally (setq factor num))
 
+      (setq factor (1+ (* 2 (position 0 rawbits :start (floor factor 2)))))
+
+#+nil
       (let* ((i0 (floor (the fixnum (* factor factor)) 2))
              (i1 (+ i0 factor))
              (i2 (+ i1 factor))
@@ -82,10 +86,28 @@
                  (setf (sbit rawbits i1) 1)  (incf i1 factor4)
                  (setf (sbit rawbits i2) 1)  (incf i2 factor4)
                  (setf (sbit rawbits i3) 1)  (incf i3 factor4))
-    
+
         (loop while (< i0 end)
               do (setf (sbit rawbits i0) 1)
                  (incf i0 factor)))
+
+      (let* ((i  (floor (the fixnum (* factor factor)) 2))
+             (i2 (+ factor factor))
+             (i3 (+ i2 factor))
+             (i4 (+ i3 factor))
+             (end1 (- end i3)))
+        (declare (fixnum i i2 i3 i4 end1))
+
+        (loop while (< i end1)
+              do (setf (sbit rawbits i) 1)
+                 (setf (sbit rawbits (+ i factor)) 1)
+                 (setf (sbit rawbits (+ i i2)) 1)
+                 (setf (sbit rawbits (+ i i3)) 1)
+                 (incf i i4))
+
+        (loop while (< i end)
+              do (setf (sbit rawbits i) 1)
+                 (incf i factor)))
 
       (incf factor 2))
     sieve-state))
