@@ -7,6 +7,7 @@
 
 ;(load "bitvector-set-2.0.0.lisp")
 ;(load "bitvector-set-2.1.7.lisp")
+;(load "bitvector-set-2.1.8-snap.lisp")
 
 
 (declaim
@@ -126,6 +127,9 @@ according to the historical data in +results+."
     (if (and (test) hist (= (count-primes sieve-state) hist)) "yes" "no")))
 
 
+
+;(require :sb-sprof) (sb-sprof:with-profiling (:max-samples 1000 :report :flat :loop nil)
+
 (let* ((passes 0)
        (start (get-internal-real-time))
        (end (+ start (* internal-time-units-per-second 5)))
@@ -143,6 +147,8 @@ according to the historical data in +results+."
             passes duration (* 1000 avg) (count-primes result) (validate result))
 
     (format t "mayerrobert-cl;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
+
+;) (disassemble 'run-sieve)
 
 
 #+nil
@@ -165,6 +171,3 @@ according to the historical data in +results+."
             passes duration (* 1000 avg) (count-primes result) (validate result))
 
     (format t "mayerrobert-cl-hashdot;~d;~f;1;algorithm=base,faithful=no,bits=1~%" passes duration)))
-
-
-;(disassemble 'run-sieve)

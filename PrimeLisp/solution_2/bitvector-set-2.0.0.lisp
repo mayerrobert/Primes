@@ -293,3 +293,7 @@
 ;(disassemble (lambda (a n)
 ;               (declare (type simple-bit-vector a) (fixnum n))
 ;               (setf (aref a n) 0)))
+;
+;(disassemble (lambda (a n v)
+;               (declare (type simple-bit-vector a) (fixnum n v))
+;               (setf (aref a n) v)))
