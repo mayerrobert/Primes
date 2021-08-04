@@ -36,6 +36,9 @@
 #+64-bit (defconstant +bits-per-word+ 64)
 #-64-bit (defconstant +bits-per-word+ 32)
 
+(deftype nonneg-fixnum ()
+  `(integer 0 ,most-positive-fixnum))
+
 (deftype sieve-element-type ()
   `(unsigned-byte ,+bits-per-word+))
 
@@ -80,13 +83,21 @@
          (logior #1# (expt 2 r)))) 0)
 
 
+(defmacro mrotl (x bits)
+  "Compute bitwise left rotation of x by 'bits' bits, represented on 'width' bits"
+  ;(declare (type sieve-element-type x) (type nonneg-fixnum bits))
+  `(logior (logand (ash ,x ,bits)
+                   ,(1- (ash 1 +bits-per-word+)))
+           (logand (ash ,x (- (- +bits-per-word+ ,bits)))
+                   ,(1- (ash 1 +bits-per-word+)))))
+
 (defun rotl (x bits)
   "Compute bitwise left rotation of x by 'bits' bits, represented on 'width' bits"
-  (declare (type sieve-element-type x) (type (integer 0 63) bits))
-  (logior (logand (ash x (mod bits +bits-per-word+))
-                  (1- (ash 1 +bits-per-word+)))
-          (logand (ash x (- (- +bits-per-word+ (mod bits +bits-per-word+))))
-                  (1- (ash 1 +bits-per-word+)))))
+  (declare (type sieve-element-type x) (type (integer 0 #.(1- +bits-per-word+)) bits))
+  (logior (logand (ash x bits)
+                   #.(1- (ash 1 +bits-per-word+)))
+           (logand (ash x (- (- +bits-per-word+ bits)))
+                   #.(1- (ash 1 +bits-per-word+)))))
 
 
 ; from solution_1/PrimeCPP.cpp
@@ -104,14 +115,13 @@
 
 (defun set-bits (bits n size skip)
   "Set every every-nth bit in array bits between first-incl and last-excl."
-  (declare (type fixnum n size skip)
+  (declare (type nonneg-fixnum n size skip)
            (type sieve-array-type bits))
   (let ((rolling-mask (expt 2 (mod n +bits-per-word+)))
         (roll-bits (mod skip +bits-per-word+)))
-    (declare (type fixnum roll-bits)
+    (declare (type nonneg-fixnum roll-bits)
              (type sieve-element-type rolling-mask))
-    (do () (nil)
-      (when (>= n size) (return-from set-bits nil))
+    (loop while (< n size) do
       (setf #1=(aref bits (floor n +bits-per-word+))
             (logior #1# rolling-mask))
       (incf n skip)
@@ -139,17 +149,17 @@
          (factor 0)
          (factorh 1)
          (qh (ceiling (floor (sqrt sieve-size)) 2)))
-    (declare (fixnum sieve-size sieve-sizeh factor factorh qh) (type sieve-array-type rawbits))
+    (declare (nonneg-fixnum sieve-size sieve-sizeh factor factorh qh) (type sieve-array-type rawbits))
     (loop while (<= factorh qh) do
 
-      (loop for num of-type fixnum
+      (loop for num of-type nonneg-fixnum
             from factorh
             to qh
             while (nth-bit-set-p rawbits num)
             finally (setq factor (1+ (* num 2)))
                     (setq factorh (1+ num)))
 
-      (set-bits rawbits (floor (the fixnum (* factor factor)) 2) sieve-sizeh factor))
+      (set-bits rawbits (floor (the nonneg-fixnum (* factor factor)) 2) sieve-sizeh factor))
     sieve-state))
 
 
@@ -219,3 +229,13 @@ according to the historical data in +results+."
             passes duration (* 1000 avg) (count-primes result) (validate result))
 
     (format t "mayerrobert-cl-rolling;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
+
+(print (macroexpand-1 '(rotl x n)))
+
+(defparameter +a+ (make-array 1 :element-type 'sieve-element-type :initial-element 0))
+(disassemble '(lambda (x n)
+                (declare (type (unsigned-byte #.+bits-per-word+) x)
+                         (type (integer 0 #.(1- +bits-per-word+)) n))
+                (declare (type (simple-array sieve-element-type 1) +a+))
+                (setf (aref +a+ 0) (rotl x n))
+                nil))
