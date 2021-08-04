@@ -6,6 +6,8 @@
 
 
 ;(load "bitvector-set-2.0.0.lisp")
+;(load "bitvector-set-2.0.0-2.1.8-snap.lisp")
+
 ;(load "bitvector-set-2.1.7.lisp")
 ;(load "bitvector-set-2.1.8-snap.lisp")
 
