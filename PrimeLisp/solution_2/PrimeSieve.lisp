@@ -135,9 +135,9 @@ according to the historical data in +results+."
        result)
   (declare (fixnum passes))
 
-  (do () ((>= (get-internal-real-time) end))
-    (setq result (run-sieve (create-sieve 1000000)))
-    (incf passes))
+  (loop while (<= (get-internal-real-time) end)
+        do (setq result (run-sieve (create-sieve 1000000)))
+           (incf passes))
 
   (let* ((duration  (/ (- (get-internal-real-time) start) internal-time-units-per-second))
          (avg (/ duration passes)))
@@ -156,9 +156,9 @@ according to the historical data in +results+."
        result)
   (declare (fixnum passes))
 
-  (do () ((>= (get-internal-real-time) end))
-    (setq result #. (run-sieve (create-sieve 1000000)))
-    (incf passes))
+  (loop while (<= (get-internal-real-time) end)
+        do (setq result #. (run-sieve (create-sieve 1000000)))
+           (incf passes))
 
   (let* ((duration  (/ (- (get-internal-real-time) start) internal-time-units-per-second))
          (avg (/ duration passes)))
