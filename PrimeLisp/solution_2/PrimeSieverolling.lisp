@@ -230,12 +230,12 @@ according to the historical data in +results+."
 
     (format t "mayerrobert-cl-rolling;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
 
-(print (macroexpand-1 '(rotl x n)))
-
-(defparameter +a+ (make-array 1 :element-type 'sieve-element-type :initial-element 0))
-(disassemble '(lambda (x n)
-                (declare (type (unsigned-byte #.+bits-per-word+) x)
-                         (type (integer 0 #.(1- +bits-per-word+)) n))
-                (declare (type (simple-array sieve-element-type 1) +a+))
-                (setf (aref +a+ 0) (rotl x n))
-                nil))
+;(print (macroexpand-1 '(rotl x n)))
+;
+;(defparameter +a+ (make-array 1 :element-type 'sieve-element-type :initial-element 0))
+;(disassemble '(lambda (x n)
+;                (declare (type (unsigned-byte #.+bits-per-word+) x)
+;                         (type (integer 0 #.(1- +bits-per-word+)) n))
+;                (declare (type (simple-array sieve-element-type 1) +a+))
+;                (setf (aref +a+ 0) (rotl x n))
+;                nil))
