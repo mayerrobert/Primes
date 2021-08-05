@@ -331,16 +331,16 @@
 
 
 (defun run-sieve (sieve-state steps)
-  (declare (sieve-state sieve-state) (simple-vector steps))
+  (declare (sieve-state sieve-state) (type (simple-array fixnum 1) steps))
 
   (do* ((maxints (sieve-state-maxints sieve-state))
+        (qh (floor (ceiling (isqrt maxints)) 2))
         (maxintsh (floor maxints 2))
         (a (sieve-state-a sieve-state))
         (step 1  (if (>= step 5759) 0 (1+ step)))
-        (factorh (floor 17 2))
-        (qh (floor (ceiling (sqrt maxints)) 2)))
+        (factorh (floor 17 2)))
        ((> factorh qh) sieve-state)
-    (declare (nonneg-fixnum maxints maxintsh step factorh qh)
+    (declare (nonneg-fixnum maxints maxintsh qh step factorh)
              (type sieve-array-type a))
     (unless (nth-bit-set-p a factorh)
       (do* ((istep step (if (>= istep 5759) 0 (1+ istep)))
@@ -352,7 +352,7 @@
         (set-nth-bit a i)
         (incf i (the nonneg-fixnum (* factor ninc)))))
 
-    (setq factorh (the nonneg-fixnum (+ factorh (the nonneg-fixnum (aref steps step)))))))
+    (setq factorh (+ factorh (aref steps step)))))
 
 
 (defun count-primes (sieve-state)
