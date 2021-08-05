@@ -5,12 +5,12 @@
 ;;;
 
 
-(declaim
-  (optimize (speed 3) (safety 0) (debug 0) (space 0))
-
-  (inline nth-bit-set-p)
-  (inline set-nth-bit)
-  (inline set-bits))
+;(declaim
+;  (optimize (speed 3) (safety 0) (debug 0) (space 0))
+;
+;  (inline nth-bit-set-p)
+;  (inline set-nth-bit)
+;  (inline set-bits))
 
 
 (defparameter *list-to* 100
@@ -56,7 +56,7 @@
   (declare (fixnum maxints))
   (make-instance 'sieve-state
     :maxints maxints
-    :a (make-array (1+ (floor (floor maxints +bits-per-word+) 2))
+    :a (make-array (ceiling (ceiling maxints +bits-per-word+) 2)
          :element-type 'sieve-element-type
          :initial-element 0)))
 
@@ -111,7 +111,7 @@
          (factorh 1)
          (qh (ceiling (floor (sqrt sieve-size)) 2)))
     (declare (fixnum sieve-size sieve-sizeh factor factorh qh) (type sieve-array-type rawbits))
-    (loop while (<= factorh qh) do
+    (loop do
 
       (loop for num of-type fixnum
             from factorh
@@ -119,6 +119,9 @@
             while (nth-bit-set-p rawbits num)
             finally (setq factor (1+ (* num 2)))
                     (setq factorh (1+ num)))
+
+      (when (> factorh qh)
+        (return-from run-sieve sieve-state))
 
       (set-bits rawbits (floor (the fixnum (* factor factor)) 2) sieve-sizeh factor))
     sieve-state))
@@ -178,10 +181,9 @@ according to the historical data in +results+."
        result)
   (declare (fixnum passes))
 
-  (do () ((>= (get-internal-real-time) end))
-    (setq result (create-sieve 1000000))
-    (run-sieve result)
-    (incf passes))
+  (loop while (<= (get-internal-real-time) end)
+        do (setq result (run-sieve (create-sieve 1000000)))
+           (incf passes))
 
   (let* ((duration  (/ (- (get-internal-real-time) start) internal-time-units-per-second))
          (avg (/ duration passes)))
