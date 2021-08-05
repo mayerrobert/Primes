@@ -58,7 +58,8 @@
   `(simple-array sieve-element-type 1))
 
 
-(defconstant +steps+ #(
+(defconstant +steps+ (coerce
+#(
  8 1 2 3 1 3 2 1 2 3 3 1 3 2 1 3 2 3 4 2 1 2 1 2 7 
  2 3 1 5 1 3 3 2 3 3 1 5 1 2 1 6 6 2 1 2 3 1 5 3 3 
  3 1 3 2 1 3 2 7 2 1 2 3 4 3 5 1 2 3 1 3 3 3 2 3 1 
@@ -290,7 +291,8 @@
  2 7 2 3 1 2 3 1 3 3 3 5 1 3 2 1 2 6 6 1 2 1 5 1 3 
  3 2 3 3 1 5 1 3 2 7 2 1 2 1 2 4 3 2 3 1 2 3 1 3 3 
  2 1 2 3 1 3 2 1 8 1
-))
+)
+'(simple-array fixnum 1)))
 
 
 (defclass sieve-state ()
@@ -299,7 +301,7 @@
             :accessor sieve-state-maxints)
 
    (a       :initarg :a
-            :type simple-array
+            :type sieve-array-type
             :accessor sieve-state-a)))
 
 
@@ -308,7 +310,7 @@
   (make-instance 'sieve-state
     :maxints maxints
     :a (make-array
-         (1+ (floor (floor maxints +bits-per-word+) 2))
+         (ceiling (ceiling maxints +bits-per-word+) 2)
          :element-type 'sieve-element-type
          :initial-element 0)))
 
@@ -403,10 +405,9 @@ according to the historical data in +results+."
        result)
   (declare (nonneg-fixnum passes))
 
-  (do () ((>= (get-internal-real-time) end))
-    (setq result (create-sieve 1000000))
-    (run-sieve result +steps+)
-    (incf passes))
+  (loop while (<= (get-internal-real-time) end)
+        do (setq result (run-sieve (create-sieve 1000000) +steps+))
+           (incf passes))
 
   (let* ((duration  (/ (- (get-internal-real-time) start) internal-time-units-per-second))
          (avg (/ duration passes)))
