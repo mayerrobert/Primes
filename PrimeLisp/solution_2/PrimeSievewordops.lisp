@@ -61,7 +61,7 @@
   (declare (fixnum maxints))
   (make-instance 'sieve-state
     :maxints maxints
-    :a (make-array (1+ (floor (floor maxints +bits-per-word+) 2))
+    :a (make-array (ceiling (ceiling maxints +bits-per-word+) 2)
          :element-type 'sieve-element-type
          :initial-element 0)))
 
@@ -91,9 +91,8 @@
          (logior #1# (expt 2 r)))) 0)
 
 
-(defmacro patterns ()
+(defun patterns ()
   "Expand into a vector of bit-patterns."
-
   (labels ((pattern (n)
              "Return a bit pattern where every n-th bit is 1, starting from least significant bit."
              (let ((result 0))
@@ -103,10 +102,12 @@
                    (setq result (shl result 1))))
                result)))
 
-    (let ((res nil))
-      (loop for x fixnum from 31 downto 2 do
-        (setq res (cons (pattern x) res)))
-      (apply #'vector (list* 0 0 res)))))
+    (let ((res (make-array 33 :element-type 'sieve-element-type :initial-element 0)))
+      (loop for x fixnum
+            from 2
+            to 32
+            do (setf (aref res x) (pattern x)))
+      res)))
 
 
 (defconstant +patterns+ (coerce (patterns) '(simple-array sieve-element-type 1))
@@ -164,7 +165,8 @@
           from first-incl
           to (1- last-excl)
           by every-nth
-          do (set-nth-bit bits num))))
+          do
+      (set-nth-bit bits num))))
 
 
 (defun run-sieve (sieve-state)
@@ -177,7 +179,7 @@
          (factorh 1)
          (qh (ceiling (floor (sqrt sieve-size)) 2)))
     (declare (fixnum sieve-size sieve-sizeh factor factorh qh) (type sieve-array-type rawbits))
-    (loop while (<= factorh qh) do
+    (loop do
 
       (loop for num of-type fixnum
             from factorh
@@ -185,6 +187,9 @@
             while (nth-bit-set-p rawbits num)
             finally (setq factor (1+ (* num 2)))
                     (setq factorh (1+ num)))
+
+      (when (> factorh qh)
+        (return-from run-sieve sieve-state))
 
       (set-bits rawbits (floor (the fixnum (* factor factor)) 2) sieve-sizeh factor))
     sieve-state))
@@ -244,10 +249,9 @@ according to the historical data in +results+."
        result)
   (declare (fixnum passes))
 
-  (do () ((>= (get-internal-real-time) end))
-    (setq result (create-sieve 1000000))
-    (run-sieve result)
-    (incf passes))
+  (loop while (<= (get-internal-real-time) end)
+        do (setq result (run-sieve (create-sieve 1000000)))
+           (incf passes))
 
   (let* ((duration  (/ (- (get-internal-real-time) start) internal-time-units-per-second))
          (avg (/ duration passes)))
