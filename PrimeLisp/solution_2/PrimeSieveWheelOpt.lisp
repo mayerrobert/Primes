@@ -337,11 +337,10 @@
         (maxintsh (floor maxints 2))
         (a (sieve-state-a sieve-state))
         (step 1  (if (>= step 5759) 0 (1+ step)))
-        (inc (aref steps step) (aref steps step))
         (factorh (floor 17 2))
         (qh (floor (ceiling (sqrt maxints)) 2)))
        ((> factorh qh) sieve-state)
-    (declare (nonneg-fixnum maxints maxintsh step inc factorh qh)
+    (declare (nonneg-fixnum maxints maxintsh step factorh qh)
              (type sieve-array-type a))
     (unless (nth-bit-set-p a factorh)
       (do* ((istep step (if (>= istep 5759) 0 (1+ istep)))
@@ -353,7 +352,7 @@
         (set-nth-bit a i)
         (incf i (the nonneg-fixnum (* factor ninc)))))
 
-    (incf factorh inc)))
+    (setq factorh (the nonneg-fixnum (+ factorh (the nonneg-fixnum (aref steps step)))))))
 
 
 (defun count-primes (sieve-state)
