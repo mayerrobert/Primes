@@ -5,12 +5,12 @@
 ;;;
 
 
-;(declaim
-;  (optimize (speed 3) (safety 0) (debug 0) (space 0))
-;
-;  (inline nth-bit-set-p)
-;  (inline set-nth-bit)
-;  (inline set-bits))
+(declaim
+  (optimize (speed 3) (safety 0) (debug 0) (space 0))
+
+  (inline nth-bit-set-p)
+  (inline set-nth-bit)
+  (inline set-bits))
 
 
 (defparameter *list-to* 100
@@ -83,22 +83,23 @@
   "Set every every-nth bit in array bits between first-incl and last-excl."
   (declare (type fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
-  (let* ((i0 first-incl)
-         (i1 (+ i0 every-nth))
-         (i2 (+ i1 every-nth))
-         (i3 (+ i2 every-nth))
-         (factor4 (* 4 every-nth)))
-    (declare (fixnum i0 i1 i2 i3 factor4))
+  (let* ((i first-incl)
+         (every-nth-times-2 (+ every-nth every-nth))
+         (every-nth-times-3 (+ every-nth-times-2 every-nth))
+         (every-nth-times-4 (+ every-nth-times-3 every-nth))
+         (end1 (- last-excl every-nth-times-3)))
+    (declare (fixnum i every-nth-times-2 every-nth-times-3 every-nth-times-4 end1))
 
-    (loop while (< i3 last-excl)
-          do (set-nth-bit bits i0)   (incf i0 factor4)
-             (set-nth-bit bits i1)   (incf i1 factor4)
-             (set-nth-bit bits i2)   (incf i2 factor4)
-             (set-nth-bit bits i3)   (incf i3 factor4))
+    (loop while (< i end1)
+          do (set-nth-bit bits i)
+             (set-nth-bit bits (+ i every-nth))
+             (set-nth-bit bits (+ i every-nth-times-2))
+             (set-nth-bit bits (+ i every-nth-times-3))
+             (incf i every-nth-times-4))
 
-    (loop while (< i0 last-excl)
-          do (set-nth-bit bits i0)
-             (incf i0 every-nth))))
+    (loop while (< i last-excl)
+          do (set-nth-bit bits i)
+             (incf i every-nth))))
 
 
 (defun run-sieve (sieve-state)
