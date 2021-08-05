@@ -5,11 +5,12 @@
 ;;;
 
 
-;(load "bitvector-set-2.0.0.lisp")
-;(load "bitvector-set-2.0.0-2.1.8-snap.lisp")
-
-;(load "bitvector-set-2.1.7.lisp")
-;(load "bitvector-set-2.1.8-snap.lisp")
+#+(and :sbcl :x86-64)
+(progn
+  (when (equalp "2.0.0" (lisp-implementation-version))
+    (load "bitvector-set-2.0.0-2.1.8-snap.lisp")) ; teach sbcl 2.0.0 the new bitvector-set from sbcl 2.1.8
+  (when (equalp "2.1.7" (lisp-implementation-version))
+    (load "bitvector-set-2.1.8-snap.lisp")))  ; teach sbcl 2.1.7 the new bitvector-set from sbcl 2.1.8
 
 
 (declaim
@@ -65,47 +66,24 @@
     (declare (fixnum sieve-size end q factor) (type simple-bit-vector rawbits))
     (loop while (<= factor q) do
 
-#+nil
-      (loop for num fixnum
-            from factor
-            to q
-            by 2
-            until (zerop (sbit rawbits (floor num 2)))
-            finally (setq factor num))
-
+      ; (position 0 bitvector :start pos) finds the index of the first
+      ; 0-bit starting at pos
       (setq factor (1+ (* 2 (position 0 rawbits :start (floor factor 2)))))
 
-#+nil
-      (let* ((i0 (floor (the fixnum (* factor factor)) 2))
-             (i1 (+ i0 factor))
-             (i2 (+ i1 factor))
-             (i3 (+ i2 factor))
-             (factor4 (* 4 factor)))
-        (declare (fixnum i0 i1 i2 i3 factor4))
-
-        (loop while (< i3 end)
-              do (setf (sbit rawbits i0) 1)  (incf i0 factor4)
-                 (setf (sbit rawbits i1) 1)  (incf i1 factor4)
-                 (setf (sbit rawbits i2) 1)  (incf i2 factor4)
-                 (setf (sbit rawbits i3) 1)  (incf i3 factor4))
-
-        (loop while (< i0 end)
-              do (setf (sbit rawbits i0) 1)
-                 (incf i0 factor)))
-
+      ; use an unrolled loop to set every factor-th bit to 1
       (let* ((i  (floor (the fixnum (* factor factor)) 2))
-             (i2 (+ factor factor))
-             (i3 (+ i2 factor))
-             (i4 (+ i3 factor))
-             (end1 (- end i3)))
-        (declare (fixnum i i2 i3 i4 end1))
+             (factor-times-2 (+ factor factor))
+             (factor-times-3 (+ factor-times-2 factor))
+             (factor-times-4 (+ factor-times-3 factor))
+             (end1 (- end factor-times-3)))
+        (declare (fixnum i factor-times-2 factor-times-3 factor-times-4 end1))
 
         (loop while (< i end1)
               do (setf (sbit rawbits i) 1)
                  (setf (sbit rawbits (+ i factor)) 1)
-                 (setf (sbit rawbits (+ i i2)) 1)
-                 (setf (sbit rawbits (+ i i3)) 1)
-                 (incf i i4))
+                 (setf (sbit rawbits (+ i factor-times-2)) 1)
+                 (setf (sbit rawbits (+ i factor-times-3)) 1)
+                 (incf i factor-times-4))
 
         (loop while (< i end)
               do (setf (sbit rawbits i) 1)
@@ -151,9 +129,6 @@ according to the historical data in +results+."
     (if (and (test) hist (= (count-primes sieve-state) hist)) "yes" "no")))
 
 
-
-;(require :sb-sprof) (sb-sprof:with-profiling (:max-samples 1000 :report :flat :loop nil)
-
 (let* ((passes 0)
        (start (get-internal-real-time))
        (end (+ start (* internal-time-units-per-second 5)))
@@ -172,10 +147,7 @@ according to the historical data in +results+."
 
     (format t "mayerrobert-cl;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
 
-;) (disassemble 'run-sieve)
 
-
-#+nil
 ; Same timed loop again, this time there is "#." before the invocation of run-sieve.
 ; See http://clhs.lisp.se/Body/02_dh.htm for what #. does.
 (let* ((passes 0)
