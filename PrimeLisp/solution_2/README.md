@@ -25,12 +25,12 @@ a compiler
 and an evaluator.
 
 When using the commandline parameter `--script`
-sbcl will use it's Lisp-reader to read S-expressions from a file
+sbcl will use it's Lisp-reader to read S-expressions from the given file
 (S-expressions are Lisp's surface representation,
 Lisp itself is not specified in terms of program text but in terms of in-memory structures).
 
-After each top-level S-expression is read (while reader macros are expanded)
-it will be macroexpanded (note that this is another kind of macros different from reader-macros!),
+After each top-level S-expression is read (during which reader macros are expanded)
+it will be macroexpanded (note that this is another kind of macro-facility different from reader-macros!),
 compiled and run.
 
 I.e. there is *read-time* (which includes processing of reader-macros),
@@ -89,7 +89,7 @@ regarding inefficient code that can't be optimized.
 
 First install "Steel Bank Common Lisp", see http://www.sbcl.org/platform-table.html.
 
-Windows users may want to go to https://github.com/sbcl/sbcl -> Actions -> Windows
+Windows users may instead want to go to https://github.com/sbcl/sbcl -> Actions -> Windows
 and enter e.g. `branch:sbcl-2.1.7` into the "Filter workflow runs" textfield.
 This will lead you to https://github.com/sbcl/sbcl/actions/runs/1082323609.
 From there you can download a Windows installer for SBCL 2.1.7.
