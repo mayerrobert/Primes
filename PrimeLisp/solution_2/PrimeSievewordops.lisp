@@ -9,7 +9,6 @@
   (optimize (speed 3) (safety 0) (debug 0) (space 0))
 
   (inline shl)
-  (inline bit-pattern)
   (inline nth-bit-set-p)
   (inline set-nth-bit)
   (inline set-bits))
@@ -92,7 +91,7 @@
 
 
 (defun patterns ()
-  "Expand into a vector of bit-patterns."
+  "Create a vector of bit-patterns."
   (labels ((pattern (n)
              "Return a bit pattern where every n-th bit is 1, starting from least significant bit."
              (let ((result 0))
@@ -111,7 +110,8 @@
 
 
 (defconstant +patterns+ (coerce (patterns) '(simple-array sieve-element-type 1))
-  "A vector of bit pattern where every n-th bit is 1, starting from least significant bit.")
+  "A vector of bit pattern where every n-th bit is 1, starting from least significant bit.
+E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
 
 
 (defun set-bits (bits first-incl last-excl every-nth)
