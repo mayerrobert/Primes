@@ -1,4 +1,4 @@
-;;;; based on mikehw's solution, approx. 120x speedup
+;;;; based on mikehw's solution, approx. 220x speedup
 ;;;
 ;;; run as:
 ;;;     sbcl --script PrimeSieve.lisp

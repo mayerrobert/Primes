@@ -69,6 +69,7 @@
     (declare (fixnum q r))
     (logbitp r (aref a q))))
 
+
 (defun set-nth-bit (a n)
   "Set n-th bit in array a to 1."
   (declare (type sieve-array-type a)
@@ -83,6 +84,8 @@
   "Set every every-nth bit in array bits between first-incl and last-excl."
   (declare (type fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
+
+  ; use an unrolled loop to set every every-th bit to 1
   (let* ((i first-incl)
          (every-nth-times-2 (+ every-nth every-nth))
          (every-nth-times-3 (+ every-nth-times-2 every-nth))
