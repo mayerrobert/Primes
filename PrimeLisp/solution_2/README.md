@@ -9,37 +9,51 @@
 
 `PrimeSieve.lisp` is based on the solution by mikehw,
 with lots of type declarations to allow sbcl's optimizer do it's thing.
-Algorithm is base.
-
-The state of the sieve is stored in a Lisp class.
+Algorithm is base with 0 for primes.
 
 Uses a bit-vector (one-dimensional arrays are called vector in Lisp)
 for storage.
 
+The timed loop is run twice: the first loop is run in a faithful fashion,
+in the second loop the call to `run-sieve` is prepended with the go-fast operator `#.`
+which results in a (cough) considerable speedup.
+
+
 `PrimeSievebitops.lisp` doesn't use a bit vector but a machine word array and some bit operations to get and set bits.
-The state of the sieve is stored in a Lisp class.
+Algorithm is base with 0 for primes.
 
 For Common Lisp bit ops see https://lispcookbook.github.io/cl-cookbook/numbers.html#bit-wise-operation
-Also it uses inverted logic, i.e. 0 for primes.
+
 
 `PrimeSievewordops.lisp` sets multiple bits at a time by copying bitpatterns (that are shifted and masked appropriately)
 into the word-array.
 
+
 `PrimeSieveWheel.lisp` is a Common Lisp port of sieve_5760of30030_only_write_read_bits.c
 by Daniel Spangberg.
-
-The state of the sieve is stored in a Lisp class.
 
 Algorithm is _wheel_, see PrimeC/solution_2/README.md for a better explanation than I would be able to give.
 
 PrimeSieveWheel.lisp stores bits in an array of `(unsigned-byte 64)`,
 much like Daniel's code uses an array of `uint64_t` when compiled with `-DCOMPILE_64_BIT`.
 
+
 `PrimeSieveWheelOpt.lisp` contains further performance improvements.
 I think the biggest improvement is using FLOOR vs AND+SHIFT
 because FLOOR does both in one step.
 
-The state of the sieve is stored in a Lisp class.
+
+`PrimeSieveWheelBitvector.lisp` is pretty much the same as `PrimeSieveWheelOpt.lisp`
+expect it uses a builtin bitvector instead on manual bit-fiddling
+because as of the upcoming SBCL 2.1.8 builtin bitvector operations are faster by a lot.
+
+
+`PrimeSieve.lisp` and `PrimeSieveWheelBitvector.lisp` load code that patches SBCL on the fly
+to get the bitvector-set operations from the not-yet-released SBCL 2.1.8, see `bitvector-set-*.lisp`.
+
+
+All: The state of the sieve is stored in a Lisp class.
+
 
 Re: optimizations; (compile-file "PrimeSieveWheel.lisp") will show lots of info during the compilation
 regarding inefficient code that can't be optimized.
