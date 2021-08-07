@@ -102,7 +102,7 @@ Then
 `sbcl --script PrimeSieveWheelOpt.lisp 2> /dev/null` (Unix)
 will do the same but only output the CSV result data.
 
-Or use `run.cmd` (Windows) or `./run.sh` (Unix) to run all files.
+Or use `run.cmd` (Windows) or `sh run.sh` (Unix) to run all files.
 
 If you can't or won't install sbcl then use `docker` or `podman` to build and run the provided dockerfile:
 
@@ -123,6 +123,31 @@ Using sbcl 2.0.0 on Windows 7, Pentium(R) Dual Core T4300 @ 2.10GHz I get
     mayerrobert-cl-wheel-opt;6020;5.008;1;algorithm=wheel,faithful=yes,bits=1
     mayerrobert-cl-words;4022;5.007;1;algorithm=base,faithful=no,bits=1
 
+
+Using the provided dockerfile with podman on Fedora33, Pentium(R) Dual Core T4300 @ 2.10GHz I get
+
+    $ podman build -t lisp2 .
+    $ podman run --rm lisp2 2> /dev/null
+    mayerrobert-cl;3388;5.000176;1;algorithm=base,faithful=yes,bits=1
+    mayerrobert-cl-hashdot;174503774;5.000176;1;algorithm=base,faithful=no,bits=1
+    mayerrobert-cl-wheel;5716;5.000177;1;algorithm=wheel,faithful=yes,bits=1
+    mayerrobert-cl-wheel-bitvector;7171;5.000176;1;algorithm=wheel,faithful=yes,bits=1
+    mayerrobert-cl-wheel-opt;6213;5.000177;1;algorithm=wheel,faithful=yes,bits=1
+    mayerrobert-clb;2373;5.001176;1;algorithm=base,faithful=yes,bits=1
+    mayerrobert-cl-words;4236;5.000176;1;algorithm=base,faithful=no,bits=1
+
+
+Using sbcl 2.1.7 on Windows 10, 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz (max turbo frequency 4.2 GHz) I get
+
+    mayerrobert-cl;9320;5.000174;1;algorithm=base,faithful=yes,bits=1
+    mayerrobert-cl-hashdot;274020057;5.000001;1;algorithm=base,faithful=no,bits=1
+    mayerrobert-clb;6130;5.000712;1;algorithm=base,faithful=yes,bits=1
+    mayerrobert-cl-wheel;17894;5.000222;1;algorithm=wheel,faithful=yes,bits=1
+    mayerrobert-cl-wheel-bitvector;24388;5.000181;1;algorithm=wheel,faithful=yes,bits=1
+    mayerrobert-cl-wheel-opt;19478;5.000096;1;algorithm=wheel,faithful=yes,bits=1
+    mayerrobert-cl-words;10882;5.000439;1;algorithm=base,faithful=no,bits=1
+
+
 Using sbcl 2.1.7 on Windows 10/ WSL2/ debian 10.9, 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz (max turbo frequency 4.2 GHz) I get
 
     $ ./run.sh 2>/dev/null
@@ -134,12 +159,3 @@ Using sbcl 2.1.7 on Windows 10/ WSL2/ debian 10.9, 11th Gen Intel(R) Core(TM) i5
     mayerrobert-clb;6365;5.01;1;algorithm=base,faithful=yes,bits=1
     mayerrobert-cl-words;11552;5.01;1;algorithm=base,faithful=no,bits=1
 
-Using sbcl 2.1.7 on Windows 10, 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz (max turbo frequency 4.2 GHz) I get
-
-    mayerrobert-cl;9320;5.000174;1;algorithm=base,faithful=yes,bits=1
-    mayerrobert-cl-hashdot;274020057;5.000001;1;algorithm=base,faithful=no,bits=1
-    mayerrobert-clb;6130;5.000712;1;algorithm=base,faithful=yes,bits=1
-    mayerrobert-cl-wheel;17894;5.000222;1;algorithm=wheel,faithful=yes,bits=1
-    mayerrobert-cl-wheel-bitvector;24388;5.000181;1;algorithm=wheel,faithful=yes,bits=1
-    mayerrobert-cl-wheel-opt;19478;5.000096;1;algorithm=wheel,faithful=yes,bits=1
-    mayerrobert-cl-words;10882;5.000439;1;algorithm=base,faithful=no,bits=1
