@@ -120,8 +120,12 @@ E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
            (type sieve-array-type bits))
   (if (<= every-nth 32)
 
-        (let* ((pattern (aref +patterns+ every-nth)) (tmp 0) (shift 0) (total 0))
-          (declare (type sieve-element-type pattern) (fixnum tmp shift total))
+        (let* ((pattern0 (aref +patterns+ every-nth))
+               (pattern pattern0)
+               (tmp 0)
+               (shift 0)
+               (total 0))
+          (declare (type sieve-element-type pattern pattern0) (fixnum tmp shift total))
 
           ; set first word and prepare pattern
           (multiple-value-bind (q r) (floor first-incl +bits-per-word+)
@@ -133,7 +137,6 @@ E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
 
             (setf (aref bits q) (logior (aref bits q) (shl pattern r)))
             (setq total (mod r every-nth))
-            (setq pattern (shl pattern total))
             (setq shift (- every-nth (mod +bits-per-word+ every-nth))))
 
           ; set remaining words
@@ -141,23 +144,20 @@ E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
                 from (1+ (floor first-incl +bits-per-word+))
                 to (1- (floor last-excl +bits-per-word+))
                 do
-                  (if (>= (setq total (+ total shift)) every-nth)
-                        (progn
-                          (setq pattern (logior (shl pattern shift) (shl 1 (- total every-nth))))
-                          (setq total (- total every-nth)))
-                    (setq pattern (shl pattern shift)))
+                  (when (>= (setq total (+ total shift)) every-nth)
+                    (setq total (- total every-nth)))
 
-                  (setf (aref bits num) (logior (aref bits num) pattern))
+                  (setf (aref bits num) (logior (aref bits num) (shl pattern0 total)))
 
                 finally ; set last word
                   (setq tmp (- last-excl (* num +bits-per-word+)))
                   (when (> tmp 0)
                     (if (>= (setq total (+ total shift)) every-nth)
-                          (setq pattern (logior (shl pattern shift) (shl 1 (- total every-nth))))
-                      (setq pattern (shl pattern shift)))
+                          (setq pattern (shl pattern0 (- total every-nth)))
+                      (setq pattern (shl pattern0 total)))
 
                     ; adjust pattern so that only up to last-excl bits will be changed
-                    (setq pattern (logand pattern (1- (shl 1 tmp))))
+                    (setq pattern (logand pattern (1- (ash 1 tmp))))
 
                     (setf (aref bits num) (logior (aref bits num) pattern)))))
 
