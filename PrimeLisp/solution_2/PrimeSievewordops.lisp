@@ -127,15 +127,15 @@ E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
                (total 0))
           (declare (type sieve-element-type pattern pattern0) (fixnum tmp shift total))
 
-          ; set first word and prepare pattern
+          ; set first word and prepare shift amounts
           (multiple-value-bind (q r) (floor first-incl +bits-per-word+)
             (when (< last-excl +bits-per-word+)
               (setf (aref bits q) (logior (aref bits q)
-                                          (logand (shl pattern r)
+                                          (logand (shl pattern0 r)
                                                   (1- (shl 1 last-excl)))))
               (return-from set-bits nil))
 
-            (setf (aref bits q) (logior (aref bits q) (shl pattern r)))
+            (setf (aref bits q) (logior (aref bits q) (shl pattern0 r)))
             (setq total (mod r every-nth))
             (setq shift (- every-nth (mod +bits-per-word+ every-nth))))
 
@@ -156,10 +156,7 @@ E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
                           (setq pattern (shl pattern0 (- total every-nth)))
                       (setq pattern (shl pattern0 total)))
 
-                    ; adjust pattern so that only up to last-excl bits will be changed
-                    (setq pattern (logand pattern (1- (ash 1 tmp))))
-
-                    (setf (aref bits num) (logior (aref bits num) pattern)))))
+                    (setf (aref bits num) (logior (aref bits num) (logand pattern (1- (ash 1 tmp))))))))
 
     (loop for num of-type fixnum
           from first-incl
@@ -260,3 +257,5 @@ according to the historical data in +results+."
             passes duration (* 1000 avg) (count-primes result) (validate result))
 
     (format t "mayerrobert-cl-words;~d;~f;1;algorithm=other,faithful=yes,bits=1~%" passes duration)))
+
+(disassemble 'set-bits)
