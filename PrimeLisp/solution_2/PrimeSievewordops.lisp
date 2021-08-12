@@ -121,11 +121,9 @@ E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
   (if (<= every-nth 32)
 
         (let* ((pattern0 (aref +patterns+ every-nth))
-               (pattern pattern0)
-               (tmp 0)
                (shift 0)
                (total 0))
-          (declare (type sieve-element-type pattern pattern0) (fixnum tmp shift total))
+          (declare (type sieve-element-type pattern0) (fixnum shift total))
 
           ; set first word and prepare shift amounts
           (multiple-value-bind (q r) (floor first-incl +bits-per-word+)
@@ -140,7 +138,8 @@ E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
             (setq shift (- every-nth (mod +bits-per-word+ every-nth))))
 
           ; set remaining words
-          (loop for num of-type fixnum
+          (loop with tmp of-type fixnum
+                for num of-type fixnum
                 from (1+ (floor first-incl +bits-per-word+))
                 to (1- (floor last-excl +bits-per-word+))
                 do
@@ -152,11 +151,12 @@ E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
                 finally ; set last word
                   (setq tmp (- last-excl (* num +bits-per-word+)))
                   (when (> tmp 0)
-                    (if (>= (setq total (+ total shift)) every-nth)
-                          (setq pattern (shl pattern0 (- total every-nth)))
-                      (setq pattern (shl pattern0 total)))
+                    (when (>= (setq total (+ total shift)) every-nth)
+                      (setq total (- total every-nth)))
 
-                    (setf (aref bits num) (logior (aref bits num) (logand pattern (1- (ash 1 tmp))))))))
+                    (setf (aref bits num) (logior (aref bits num)
+                                                  (logand (shl pattern0 total)
+                                                          (1- (shl 1 tmp))))))))
 
     (loop for num of-type fixnum
           from first-incl
