@@ -71,14 +71,14 @@
       (setq factor (1+ (* 2 (position 0 rawbits :start (floor factor 2)))))
 
       ; use an unrolled loop to set every factor-th bit to 1
-      (let* ((i  (floor (the fixnum (* factor factor)) 2))
-             (factor-times-2 (+ factor factor))
-             (factor-times-3 (+ factor-times-2 factor))
-             (factor-times-4 (+ factor-times-3 factor))
-             (end1 (- end factor-times-3)))
-        (declare (fixnum i factor-times-2 factor-times-3 factor-times-4 end1))
+      (let* ((i  (floor (the fixnum (* factor factor)) 2)))
+        (declare (fixnum i))
 
-        (loop while (< i end1)
+        (loop with factor-times-2 of-type fixnum = (+ factor factor)
+              with factor-times-3 of-type fixnum = (+ factor-times-2 factor)
+              with factor-times-4 of-type fixnum = (+ factor-times-3 factor)
+              with end1           of-type fixnum = (- end factor-times-3)
+              while (< i end1)
               do (setf (sbit rawbits i) 1)
                  (setf (sbit rawbits (+ i factor)) 1)
                  (setf (sbit rawbits (+ i factor-times-2)) 1)
