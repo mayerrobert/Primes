@@ -89,12 +89,35 @@
 
 (defparameter *debug* nil)
 
+
 (defun set-bits-simple (bits first-incl last-excl every-nth)
   (declare (type fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
   (loop while (< first-incl last-excl)
         do (set-nth-bit bits first-incl)
            (incf first-incl every-nth)))
+
+
+(defun set-bits-unrolled (bits first-incl last-excl every-nth)
+  "Use an unrolled loop to set every every-th bit to 1"
+  (declare (type fixnum first-incl last-excl every-nth)
+           (type sieve-array-type bits))
+  (let* ((i first-incl)
+         (every-nth-times-2 (+ every-nth every-nth))
+         (every-nth-times-3 (+ every-nth-times-2 every-nth))
+         (every-nth-times-4 (+ every-nth-times-3 every-nth))
+         (end1 (- last-excl every-nth-times-3)))
+    (declare (fixnum i every-nth-times-2 every-nth-times-3 every-nth-times-4 end1))
+
+    (loop while (< i end1)
+          do (set-nth-bit bits i)
+             (set-nth-bit bits (+ i every-nth))
+             (set-nth-bit bits (+ i every-nth-times-2))
+             (set-nth-bit bits (+ i every-nth-times-3))
+             (incf i every-nth-times-4))
+
+    (set-bits-simple bits i last-excl every-nth)))
+
 
 (defun set-bits (bits first-incl last-excl every-nth)
   "Set every every-nth bit in array bits between first-incl and last-excl."
@@ -139,22 +162,7 @@
        (set-bits-simple bits first-incl last-excl every-nth)))
 
     (t
-     ; use an unrolled loop to set every every-th bit to 1
-     (let* ((i first-incl)
-            (every-nth-times-2 (+ every-nth every-nth))
-            (every-nth-times-3 (+ every-nth-times-2 every-nth))
-            (every-nth-times-4 (+ every-nth-times-3 every-nth))
-            (end1 (- last-excl every-nth-times-3)))
-       (declare (fixnum i every-nth-times-2 every-nth-times-3 every-nth-times-4 end1))
-
-       (loop while (< i end1)
-             do (set-nth-bit bits i)
-                (set-nth-bit bits (+ i every-nth))
-                (set-nth-bit bits (+ i every-nth-times-2))
-                (set-nth-bit bits (+ i every-nth-times-3))
-                (incf i every-nth-times-4))
-
-       (set-bits-simple bits i last-excl every-nth))))))
+     (set-bits-unrolled bits first-incl last-excl every-nth)))))
 
 
 (defun run-sieve (sieve-state)
