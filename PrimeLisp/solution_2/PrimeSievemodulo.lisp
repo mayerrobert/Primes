@@ -122,6 +122,33 @@
     (set-bits-simple bits i last-excl every-nth)))
 
 
+(defmacro handle-x-y (startmod skipmod)
+  `(progn
+   (loop with c0 of-type fixnum = (floor (+ startmod (* 0 every-nth)) +bits-per-word+)
+         with c1 of-type fixnum = (floor (+ startmod (* 1 every-nth)) +bits-per-word+)
+         with c2 of-type fixnum = (floor (+ startmod (* 2 every-nth)) +bits-per-word+)
+         with c3 of-type fixnum = (floor (+ startmod (* 3 every-nth)) +bits-per-word+)
+         with c4 of-type fixnum = (floor (+ startmod (* 4 every-nth)) +bits-per-word+)
+         with c5 of-type fixnum = (floor (+ startmod (* 5 every-nth)) +bits-per-word+)
+         with c6 of-type fixnum = (floor (+ startmod (* 6 every-nth)) +bits-per-word+)
+         with c7 of-type fixnum = (floor (+ startmod (* 7 every-nth)) +bits-per-word+)
+         for word fixnum
+         from bulkstartword
+         to (1- bulkendword)
+         by every-nth
+         do (or-word bits (+ word c0) (ash 1 (mod (+ startmod (* 0 skipmod)) +bits-per-word+)))
+            (or-word bits (+ word c1) (ash 1 (mod (+ startmod (* 1 skipmod)) +bits-per-word+)))
+            (or-word bits (+ word c2) (ash 1 (mod (+ startmod (* 2 skipmod)) +bits-per-word+)))
+            (or-word bits (+ word c3) (ash 1 (mod (+ startmod (* 3 skipmod)) +bits-per-word+)))
+            (or-word bits (+ word c4) (ash 1 (mod (+ startmod (* 4 skipmod)) +bits-per-word+)))
+            (or-word bits (+ word c5) (ash 1 (mod (+ startmod (* 5 skipmod)) +bits-per-word+)))
+            (or-word bits (+ word c6) (ash 1 (mod (+ startmod (* 6 skipmod)) +bits-per-word+)))
+            (or-word bits (+ word c7) (ash 1 (mod (+ startmod (* 7 skipmod)) +bits-per-word+)))
+         finally (setq first-incl (+ startmod (* word +bits-per-word+))))
+
+   (set-bits-simple bits first-incl last-excl every-nth)))
+
+
 (defun set-bits (bits first-incl last-excl every-nth)
   "Set every every-nth bit in array bits between first-incl and last-excl."
   (declare (type fixnum first-incl last-excl every-nth)
@@ -137,34 +164,27 @@
                 (skipmod (mod every-nth +bits-per-word+))
                 (bulkendword (floor (- last-excl (* +bits-per-word+ every-nth)) +bits-per-word+)))
             (declare (fixnum startmod skipmod bulkendword))
-            (case skipmod
-              (3
-               (loop with c0 of-type fixnum = (floor (+ startmod (* 0 every-nth)) +bits-per-word+)
-                     with c1 of-type fixnum = (floor (+ startmod (* 1 every-nth)) +bits-per-word+)
-                     with c2 of-type fixnum = (floor (+ startmod (* 2 every-nth)) +bits-per-word+)
-                     with c3 of-type fixnum = (floor (+ startmod (* 3 every-nth)) +bits-per-word+)
-                     with c4 of-type fixnum = (floor (+ startmod (* 4 every-nth)) +bits-per-word+)
-                     with c5 of-type fixnum = (floor (+ startmod (* 5 every-nth)) +bits-per-word+)
-                     with c6 of-type fixnum = (floor (+ startmod (* 6 every-nth)) +bits-per-word+)
-                     with c7 of-type fixnum = (floor (+ startmod (* 7 every-nth)) +bits-per-word+)
-                     for word fixnum
-                     from bulkstartword
-                     to (1- bulkendword)
-                     by every-nth
-                     do (or-word bits (+ word c0) (ash 1 (mod (+ startmod (* 0 skipmod)) +bits-per-word+)))
-                        (or-word bits (+ word c1) (ash 1 (mod (+ startmod (* 1 skipmod)) +bits-per-word+)))
-                        (or-word bits (+ word c2) (ash 1 (mod (+ startmod (* 2 skipmod)) +bits-per-word+)))
-                        (or-word bits (+ word c3) (ash 1 (mod (+ startmod (* 3 skipmod)) +bits-per-word+)))
-                        (or-word bits (+ word c4) (ash 1 (mod (+ startmod (* 4 skipmod)) +bits-per-word+)))
-                        (or-word bits (+ word c5) (ash 1 (mod (+ startmod (* 5 skipmod)) +bits-per-word+)))
-                        (or-word bits (+ word c6) (ash 1 (mod (+ startmod (* 6 skipmod)) +bits-per-word+)))
-                        (or-word bits (+ word c7) (ash 1 (mod (+ startmod (* 7 skipmod)) +bits-per-word+)))
-                     finally (setq first-incl (+ startmod (* word +bits-per-word+))))
-
-               (set-bits-simple bits first-incl last-excl every-nth))
+            (case (+ startmod (ash skipmod 8))
+              (#.(+ 0 (ash 1 8)) (handle-x-y 0 1))
+              (#.(+ 0 (ash 3 8)) (handle-x-y 0 3))
+              (#.(+ 0 (ash 5 8)) (handle-x-y 0 5))
+              (#.(+ 0 (ash 7 8)) (handle-x-y 0 7))
+              (#.(+ 2 (ash 1 8)) (handle-x-y 2 1))
+              (#.(+ 2 (ash 3 8)) (handle-x-y 2 3))
+              (#.(+ 2 (ash 5 8)) (handle-x-y 2 5))
+              (#.(+ 2 (ash 7 8)) (handle-x-y 2 7))
+              (#.(+ 4 (ash 1 8)) (handle-x-y 4 1))
+              (#.(+ 4 (ash 3 8)) (handle-x-y 4 3))
+              (#.(+ 4 (ash 5 8)) (handle-x-y 4 5))
+              (#.(+ 4 (ash 7 8)) (handle-x-y 4 7))
+              (#.(+ 6 (ash 1 8)) (handle-x-y 6 1))
+              (#.(+ 6 (ash 3 8)) (handle-x-y 6 3))
+              (#.(+ 6 (ash 5 8)) (handle-x-y 6 5))
+              (#.(+ 6 (ash 7 8)) (handle-x-y 6 7))
 
               (t
-               (set-bits-unrolled bits first-incl last-excl every-nth))))
+               (error "unexpected"))))
+               ;(set-bits-unrolled bits first-incl last-excl every-nth))))
 
       (set-bits-unrolled bits first-incl last-excl every-nth))))
 
