@@ -10,6 +10,9 @@
 ;
 ;  (inline nth-bit-set-p)
 ;  (inline set-nth-bit)
+;
+;  (inline set-bits-simple)
+;  (inline set-bits-unrolled)
 ;  (inline set-bits))
 
 
@@ -124,45 +127,46 @@
   (declare (type fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
 
-  (let ((startmod (mod first-incl +bits-per-word+))
-        (skipmod (mod every-nth +bits-per-word+)))
-  (case skipmod
-    (3
-     (let* ((bulkstartword (floor first-incl +bits-per-word+))
-            (bulkstart     (* bulkstartword +bits-per-word+))
+  (let* ((bulkstartword (floor first-incl +bits-per-word+))
+         (bulkstart     (* bulkstartword +bits-per-word+)))
+    (declare (fixnum bulkstartword bulkstart))
 
-            (bulkendword   (floor (- last-excl (* +bits-per-word+ every-nth)) +bits-per-word+))
-            )
-       (declare (fixnum bulkstartword bulkstart bulkendword))
+    (if (< bulkstart last-excl)
 
-       (when (< bulkstart last-excl)
+          (let ((startmod (mod first-incl +bits-per-word+))
+                (skipmod (mod every-nth +bits-per-word+))
+                (bulkendword (floor (- last-excl (* +bits-per-word+ every-nth)) +bits-per-word+)))
+            (declare (fixnum startmod skipmod bulkendword))
+            (case skipmod
+              (3
+               (loop with c0 of-type fixnum = (floor (+ startmod (* 0 every-nth)) +bits-per-word+)
+                     with c1 of-type fixnum = (floor (+ startmod (* 1 every-nth)) +bits-per-word+)
+                     with c2 of-type fixnum = (floor (+ startmod (* 2 every-nth)) +bits-per-word+)
+                     with c3 of-type fixnum = (floor (+ startmod (* 3 every-nth)) +bits-per-word+)
+                     with c4 of-type fixnum = (floor (+ startmod (* 4 every-nth)) +bits-per-word+)
+                     with c5 of-type fixnum = (floor (+ startmod (* 5 every-nth)) +bits-per-word+)
+                     with c6 of-type fixnum = (floor (+ startmod (* 6 every-nth)) +bits-per-word+)
+                     with c7 of-type fixnum = (floor (+ startmod (* 7 every-nth)) +bits-per-word+)
+                     for word fixnum
+                     from bulkstartword
+                     to (1- bulkendword)
+                     by every-nth
+                     do (or-word bits (+ word c0) (ash 1 (mod (+ startmod (* 0 skipmod)) +bits-per-word+)))
+                        (or-word bits (+ word c1) (ash 1 (mod (+ startmod (* 1 skipmod)) +bits-per-word+)))
+                        (or-word bits (+ word c2) (ash 1 (mod (+ startmod (* 2 skipmod)) +bits-per-word+)))
+                        (or-word bits (+ word c3) (ash 1 (mod (+ startmod (* 3 skipmod)) +bits-per-word+)))
+                        (or-word bits (+ word c4) (ash 1 (mod (+ startmod (* 4 skipmod)) +bits-per-word+)))
+                        (or-word bits (+ word c5) (ash 1 (mod (+ startmod (* 5 skipmod)) +bits-per-word+)))
+                        (or-word bits (+ word c6) (ash 1 (mod (+ startmod (* 6 skipmod)) +bits-per-word+)))
+                        (or-word bits (+ word c7) (ash 1 (mod (+ startmod (* 7 skipmod)) +bits-per-word+)))
+                     finally (setq first-incl (+ startmod (* word +bits-per-word+))))
 
-         (loop with c0 of-type fixnum = (floor (+ startmod (* 0 every-nth)) +bits-per-word+)
-               with c1 of-type fixnum = (floor (+ startmod (* 1 every-nth)) +bits-per-word+)
-               with c2 of-type fixnum = (floor (+ startmod (* 2 every-nth)) +bits-per-word+)
-               with c3 of-type fixnum = (floor (+ startmod (* 3 every-nth)) +bits-per-word+)
-               with c4 of-type fixnum = (floor (+ startmod (* 4 every-nth)) +bits-per-word+)
-               with c5 of-type fixnum = (floor (+ startmod (* 5 every-nth)) +bits-per-word+)
-               with c6 of-type fixnum = (floor (+ startmod (* 6 every-nth)) +bits-per-word+)
-               with c7 of-type fixnum = (floor (+ startmod (* 7 every-nth)) +bits-per-word+)
-               for word fixnum
-               from bulkstartword
-               to (1- bulkendword)
-               by every-nth
-               do (or-word bits (+ word c0) (ash 1 (mod (+ startmod (* 0 skipmod)) +bits-per-word+)))
-                  (or-word bits (+ word c1) (ash 1 (mod (+ startmod (* 1 skipmod)) +bits-per-word+)))
-                  (or-word bits (+ word c2) (ash 1 (mod (+ startmod (* 2 skipmod)) +bits-per-word+)))
-                  (or-word bits (+ word c3) (ash 1 (mod (+ startmod (* 3 skipmod)) +bits-per-word+)))
-                  (or-word bits (+ word c4) (ash 1 (mod (+ startmod (* 4 skipmod)) +bits-per-word+)))
-                  (or-word bits (+ word c5) (ash 1 (mod (+ startmod (* 5 skipmod)) +bits-per-word+)))
-                  (or-word bits (+ word c6) (ash 1 (mod (+ startmod (* 6 skipmod)) +bits-per-word+)))
-                  (or-word bits (+ word c7) (ash 1 (mod (+ startmod (* 7 skipmod)) +bits-per-word+)))
-               finally (setq first-incl (+ startmod (* word +bits-per-word+)))))
+               (set-bits-simple bits first-incl last-excl every-nth))
 
-       (set-bits-simple bits first-incl last-excl every-nth)))
+              (t
+               (set-bits-unrolled bits first-incl last-excl every-nth))))
 
-    (t
-     (set-bits-unrolled bits first-incl last-excl every-nth)))))
+      (set-bits-unrolled bits first-incl last-excl every-nth))))
 
 
 (defun run-sieve (sieve-state)
@@ -187,6 +191,8 @@
       (when (> factorh qh)
         (return-from run-sieve sieve-state))
 
+      ; factor is an odd number >= 3
+      ; (floor (the fixnum (* factor factor)) 2) evals to an even number
       (set-bits rawbits (floor (the fixnum (* factor factor)) 2) sieve-sizeh factor))
     sieve-state))
 
