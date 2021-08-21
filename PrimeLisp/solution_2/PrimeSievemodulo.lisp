@@ -36,8 +36,7 @@
    to be found under some limit, such as 168 primes under 1000")
 
 
-#+64-bit (defconstant +bits-per-word+ 8)
-#-64-bit (defconstant +bits-per-word+ 32)
+(defconstant +bits-per-word+ 8)
 
 (deftype sieve-element-type ()
   `(unsigned-byte ,+bits-per-word+))
@@ -159,7 +158,10 @@
                 (skipmod (mod every-nth +bits-per-word+))
                 (bulkendword (floor (- last-excl (the fixnum (* +bits-per-word+ every-nth))) +bits-per-word+)))
             (declare (fixnum startmod skipmod bulkendword))
-            ;(format t "startmod ~d skipmod ~d last-excl - first-incl ~d~%" startmod skipmod (- last-excl first-incl))
+            ;(format t "startmod ~d, skipmod ~d, skip ~d, last-excl - first-incl ~d, bits to set ~d~%" startmod skipmod every-nth #1=(- last-excl first-incl) (floor #1# every-nth))
+
+            ; first-incl is even, every-nth is odd, see comment in run-sieve below.
+            ; therefore only a few combinations can happen: startmod [0 2 4 6] and skipmod [1 3 5 7]
             (case (the fixnum (+ startmod (ash skipmod 8)))
               (#.(+ 0 (ash 1 8)) (handle-x-y 0 1))
               (#.(+ 0 (ash 3 8)) (handle-x-y 0 3))
@@ -279,43 +281,3 @@ according to the historical data in +results+."
     (format t "mayerrobert-cl-modulo;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
 
 ;(disassemble 'set-bits)
-
-
-#+nil
-(progn
-(defparameter *debug* nil)
-(defparameter *words* 10)
-(defparameter *a* (make-array *words* :element-type 'sieve-element-type))
-
-(defparameter *first* 20)
-(defparameter *last*  50)
-(defparameter *every* 3)
-
-;(defun set-bits (bits first-incl last-excl every-nth)
-(set-bits *a* *first* *last* *every*)
-
-(dotimes (i *words*)
-  (format t "~2d: ~2d - ~2d: ~8,'0b~%" i (+ +bits-per-word+(* i +bits-per-word+) -1) (* i +bits-per-word+) (aref *a* i)))
-
-(defun tst (start end skip words)
-  (format t "tst: ~%first=~d, last=~d, every=~d~%" start end skip)
-  (let ((a (make-array words :element-type 'sieve-element-type)))
-    (set-bits a start end skip)
-    (loop for i from 0 to (1- start)
-          do (when (nth-bit-set-p a i)
-               (format t "FEHLER: bit ~d ist 1, sollte 0 sein (bit vor start gesetzt)~%" i)))
-    (loop for i from start to (1- end)
-          do (if (zerop (mod (- i start) skip))
-                   (unless (nth-bit-set-p a i) (format t "FEHLER: bit ~d ist 0, sollte 1 sein~%" i))
-               (when (nth-bit-set-p a i) (format t "FEHLER: bit ~d ist 1, sollte 0 sein~%" i))))
-    (loop for i from end to (1- (* words +bits-per-word+))
-          do (when (nth-bit-set-p a i)
-               (format t "FEHLER: bit ~d ist 1, sollte 0 sein (bit nach end gesetzt)~%" i)))
-    (terpri)))
-
-
-(let ((*debug* nil))
-  (tst *first* *last* *every* 10)
-  (tst 1 *last* *every* 10)
-  )
-)
