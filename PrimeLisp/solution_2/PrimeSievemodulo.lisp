@@ -1,7 +1,7 @@
-;;;; based on sieve_1of2.c by  by Daniel Spangberg
+;;;; based on https://github.com/PlummersSoftwareLLC/Primes/pull/641
 ;;;
 ;;; run as:
-;;;     sbcl --script PrimeSievebitops.lisp
+;;;     sbcl --script PrimeSievemodulo.lisp
 ;;;
 
 
@@ -87,7 +87,7 @@
      (setf (aref ,a ,idx) (logior (aref ,a ,idx) ,pattern))))
 
 
-(defparameter *debug* t)
+(defparameter *debug* nil)
 
 (defun set-bits (bits first-incl last-excl every-nth)
   "Set every every-nth bit in array bits between first-incl and last-excl."
@@ -98,21 +98,17 @@
 ;    (format t "every = ~4d, every % l = ~2d, first = ~6d, first % l = ~2d, n-ops = ~d~%"
 ;            every-nth (mod every-nth l) first-incl (mod first-incl l) (floor (- 500000 first-incl) every-nth)))
 
-  (let (;(startmod (mod first-incl +bits-per-word+))
+  (let ((startmod (mod first-incl +bits-per-word+))
         (skipmod (mod every-nth +bits-per-word+)))
-  (case every-nth
+  (case skipmod
     (3
      (let* ((i first-incl)
             (span (* +bits-per-word+ every-nth))
 
-            (bulkstartword (ceiling first-incl +bits-per-word+))
+            (bulkstartword (floor first-incl +bits-per-word+))
             (bulkstart     (* bulkstartword +bits-per-word+))
-            (startmod (- (do ((x (mod first-incl +bits-per-word+)))
-                             ((> x +bits-per-word+) x)
-                             (incf x every-nth))
-                         +bits-per-word+))
 
-            (bulkendword   (floor last-excl +bits-per-word+))
+            (bulkendword   (floor (- last-excl span) +bits-per-word+))
             (bulkend       (* bulkendword +bits-per-word+))
             )
        (declare (fixnum i span bulkstartword bulkstart bulkendword bulkend))
@@ -124,9 +120,6 @@
          (format t "span ~d, startmod   ~d~%" span startmod))
 
        (when (< bulkstart last-excl)
-       (loop while (< i bulkstart)
-             do (set-nth-bit bits i)
-                (incf i every-nth))
 
 ;       (loop while (< i bulkend)
 ;             do ;(set-nth-bit bits i)
@@ -147,10 +140,11 @@
                 (or-word bits (+ word (floor (+ startmod (* 5 every-nth)) +bits-per-word+)) (ash 1 (mod (+ startmod (* 5 every-nth)) +bits-per-word+)))
                 (or-word bits (+ word (floor (+ startmod (* 6 every-nth)) +bits-per-word+)) (ash 1 (mod (+ startmod (* 6 every-nth)) +bits-per-word+)))
                 (or-word bits (+ word (floor (+ startmod (* 7 every-nth)) +bits-per-word+)) (ash 1 (mod (+ startmod (* 7 every-nth)) +bits-per-word+)))
-             finally (setq i (* word +bits-per-word+))
+             finally (setq i (+ startmod (* word +bits-per-word+)))
         )
         )
 
+       (when *debug* (format t "endloop: [~d .. ~d[~%" i last-excl))
        (loop while (< i last-excl)
              do (set-nth-bit bits i)
                 (incf i every-nth))
@@ -251,7 +245,7 @@ according to the historical data in +results+."
     (if (and (test) hist (= (count-primes sieve-state) hist)) "yes" "no")))
 
 
-#+nil
+;#+nil
 (let* ((passes 0)
        (start (get-internal-real-time))
        (end (+ start (* internal-time-units-per-second 5)))
@@ -273,11 +267,12 @@ according to the historical data in +results+."
 ;(disassemble 'set-bits)
 
 
-
+#+nil
+(progn
 (defparameter *words* 10)
 (defparameter *a* (make-array *words* :element-type 'sieve-element-type))
 
-(defparameter *first* 1)
+(defparameter *first* 20)
 (defparameter *last*  50)
 (defparameter *every* 3)
 
@@ -293,11 +288,14 @@ according to the historical data in +results+."
     (set-bits a start end skip)
     (loop for i from 0 to (1- start)
           do (when (nth-bit-set-p a i)
-               (format t "FEHLER: bit ~d ist 1, sollte 0 sein~%" i)))
+               (format t "FEHLER: bit ~d ist 1, sollte 0 sein (bit vor start gesetzt)~%" i)))
     (loop for i from start to (1- end)
           do (if (zerop (mod (- i start) skip))
                    (unless (nth-bit-set-p a i) (format t "FEHLER: bit ~d ist 0, sollte 1 sein~%" i))
                (when (nth-bit-set-p a i) (format t "FEHLER: bit ~d ist 1, sollte 0 sein~%" i))))
+    (loop for i from end to (1- (* words +bits-per-word+))
+          do (when (nth-bit-set-p a i)
+               (format t "FEHLER: bit ~d ist 1, sollte 0 sein (bit nach end gesetzt)~%" i)))
     (terpri)))
 
 
@@ -305,3 +303,4 @@ according to the historical data in +results+."
   (tst *first* *last* *every* 10)
   (tst 1 *last* *every* 10)
   )
+)
