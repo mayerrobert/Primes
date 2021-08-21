@@ -55,6 +55,9 @@
          :initial-element 0)))
 
 
+(deftype nonneg-fixnum ()
+  `(integer 0 ,most-positive-fixnum))
+
 (defun run-sieve (sieve-state)
   (declare (type sieve-state sieve-state))
 
@@ -63,7 +66,7 @@
          (end (ceiling sieve-size 2))
          (q (floor (sqrt sieve-size)))
          (factor 3))
-    (declare (fixnum sieve-size end q factor) (type simple-bit-vector rawbits))
+    (declare (nonneg-fixnum sieve-size end q factor) (type simple-bit-vector rawbits))
     (loop while (<= factor q) do
 
       ; (position 0 bitvector :start pos) finds the index of the first
@@ -71,13 +74,13 @@
       (setq factor (1+ (* 2 (position 0 rawbits :start (floor factor 2)))))
 
       ; use an unrolled loop to set every factor-th bit to 1
-      (let* ((i  (floor (the fixnum (* factor factor)) 2)))
-        (declare (fixnum i))
+      (let* ((i  (floor (the nonneg-fixnum (* factor factor)) 2)))
+        (declare (nonneg-fixnum i))
 
-        (loop with factor-times-2 of-type fixnum = (+ factor factor)
-              with factor-times-3 of-type fixnum = (+ factor-times-2 factor)
-              with factor-times-4 of-type fixnum = (+ factor-times-3 factor)
-              with end1           of-type fixnum = (- end factor-times-3)
+        (loop with factor-times-2 of-type nonneg-fixnum = (+ factor factor)
+              with factor-times-3 of-type nonneg-fixnum = (+ factor-times-2 factor)
+              with factor-times-4 of-type nonneg-fixnum = (+ factor-times-3 factor)
+              with end1           of-type nonneg-fixnum = (- end factor-times-3)
               while (< i end1)
               do (setf (sbit rawbits i) 1)
                  (setf (sbit rawbits (+ i factor)) 1)

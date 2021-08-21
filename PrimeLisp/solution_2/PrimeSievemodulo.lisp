@@ -38,6 +38,9 @@
 
 (defconstant +bits-per-word+ 8)
 
+(deftype nonneg-fixnum ()
+  `(integer 0 ,most-positive-fixnum))
+
 (deftype sieve-element-type ()
   `(unsigned-byte ,+bits-per-word+))
 
@@ -67,28 +70,32 @@
 (defun nth-bit-set-p (a n)
   "Returns t if n-th bit is set in array a, nil otherwise."
   (declare (sieve-array-type a)
-           (fixnum n))
+           (nonneg-fixnum n))
   (multiple-value-bind (q r) (floor n +bits-per-word+)
-    (declare (fixnum q r))
+    (declare (nonneg-fixnum q r))
     (logbitp r (aref a q))))
 
 
 (defun set-nth-bit (a n)
   "Set n-th bit in array a to 1."
   (declare (type sieve-array-type a)
-           (type fixnum n))
+           (type nonneg-fixnum n))
   (multiple-value-bind (q r) (floor n +bits-per-word+)
-    (declare (fixnum q r))
+    (declare (nonneg-fixnum q r))
     (setf #1=(aref a q)
          (logior #1# (expt 2 r)))) 0)
 
 
-(defmacro or-word (a idx pattern)
-  `(setf (aref ,a ,idx) (logior (aref ,a ,idx) ,pattern)))
+;(defmacro or-word (a idx pattern)
+;  `(setf (aref ,a ,idx) (logior (aref ,a ,idx) ,pattern)))
+
+(declaim (inline or-word))
+(defun or-word (a idx pattern)
+  (setf (aref a idx) (logior (aref a idx) pattern)))
 
 
 (defun set-bits-simple (bits first-incl last-excl every-nth)
-  (declare (type fixnum first-incl last-excl every-nth)
+  (declare (type nonneg-fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
   (loop while (< first-incl last-excl)
         do (set-nth-bit bits first-incl)
@@ -97,14 +104,14 @@
 
 (defun set-bits-unrolled (bits first-incl last-excl every-nth)
   "Use an unrolled loop to set every every-th bit to 1"
-  (declare (type fixnum first-incl last-excl every-nth)
+  (declare (type nonneg-fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
   (let* ((i first-incl)
          (every-nth-times-2 (+ every-nth every-nth))
          (every-nth-times-3 (+ every-nth-times-2 every-nth))
          (every-nth-times-4 (+ every-nth-times-3 every-nth))
          (end1 (- last-excl every-nth-times-3)))
-    (declare (fixnum i every-nth-times-2 every-nth-times-3 every-nth-times-4 end1))
+    (declare (nonneg-fixnum i every-nth-times-2 every-nth-times-3 every-nth-times-4 end1))
 
     (loop while (< i end1)
           do (set-nth-bit bits i)
@@ -118,15 +125,15 @@
 
 (defmacro handle-x-y (startmod skipmod)
   `(progn
-   (loop with c0 of-type fixnum = (floor (the fixnum (+ ,startmod (the fixnum (* 0 every-nth)))) +bits-per-word+)
-         with c1 of-type fixnum = (floor (the fixnum (+ ,startmod (the fixnum (* 1 every-nth)))) +bits-per-word+)
-         with c2 of-type fixnum = (floor (the fixnum (+ ,startmod (the fixnum (* 2 every-nth)))) +bits-per-word+)
-         with c3 of-type fixnum = (floor (the fixnum (+ ,startmod (the fixnum (* 3 every-nth)))) +bits-per-word+)
-         with c4 of-type fixnum = (floor (the fixnum (+ ,startmod (the fixnum (* 4 every-nth)))) +bits-per-word+)
-         with c5 of-type fixnum = (floor (the fixnum (+ ,startmod (the fixnum (* 5 every-nth)))) +bits-per-word+)
-         with c6 of-type fixnum = (floor (the fixnum (+ ,startmod (the fixnum (* 6 every-nth)))) +bits-per-word+)
-         with c7 of-type fixnum = (floor (the fixnum (+ ,startmod (the fixnum (* 7 every-nth)))) +bits-per-word+)
-         for word fixnum
+   (loop with c0 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 0 every-nth)))) +bits-per-word+)
+         with c1 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 1 every-nth)))) +bits-per-word+)
+         with c2 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 2 every-nth)))) +bits-per-word+)
+         with c3 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 3 every-nth)))) +bits-per-word+)
+         with c4 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 4 every-nth)))) +bits-per-word+)
+         with c5 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 5 every-nth)))) +bits-per-word+)
+         with c6 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 6 every-nth)))) +bits-per-word+)
+         with c7 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 7 every-nth)))) +bits-per-word+)
+         for word of-type nonneg-fixnum
          from bulkstartword
          to (1- bulkendword)
          by every-nth
@@ -138,31 +145,31 @@
             (or-word bits (+ word c5) ,(ash 1 (mod (+ startmod (* 5 skipmod)) +bits-per-word+)))
             (or-word bits (+ word c6) ,(ash 1 (mod (+ startmod (* 6 skipmod)) +bits-per-word+)))
             (or-word bits (+ word c7) ,(ash 1 (mod (+ startmod (* 7 skipmod)) +bits-per-word+)))
-         finally (setq first-incl (+ ,startmod (the fixnum (* word +bits-per-word+)))))
+         finally (setq first-incl (+ ,startmod (the nonneg-fixnum (* word +bits-per-word+)))))
 
    (set-bits-simple bits first-incl last-excl every-nth)))
 
 
 (defun set-bits (bits first-incl last-excl every-nth)
   "Set every every-nth bit in array bits between first-incl and last-excl."
-  (declare (type fixnum first-incl last-excl every-nth)
+  (declare (type nonneg-fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
 
   (let* ((bulkstartword (floor first-incl +bits-per-word+))
          (bulkstart     (* bulkstartword +bits-per-word+)))
-    (declare (fixnum bulkstartword bulkstart))
+    (declare (nonneg-fixnum bulkstartword bulkstart))
 
     (if (< bulkstart last-excl)
 
           (let ((startmod (mod first-incl +bits-per-word+))
                 (skipmod (mod every-nth +bits-per-word+))
-                (bulkendword (floor (- last-excl (the fixnum (* +bits-per-word+ every-nth))) +bits-per-word+)))
-            (declare (fixnum startmod skipmod bulkendword))
+                (bulkendword (floor (- last-excl (the nonneg-fixnum (* +bits-per-word+ every-nth))) +bits-per-word+)))
+            (declare (nonneg-fixnum startmod skipmod bulkendword))
             ;(format t "startmod ~d, skipmod ~d, skip ~d, last-excl - first-incl ~d, bits to set ~d~%" startmod skipmod every-nth #1=(- last-excl first-incl) (floor #1# every-nth))
 
             ; first-incl is even, every-nth is odd, see comment in run-sieve below.
             ; therefore only a few combinations can happen: startmod [0 2 4 6] and skipmod [1 3 5 7]
-            (case (the fixnum (+ startmod (ash skipmod 8)))
+            (case (the nonneg-fixnum (+ startmod (ash skipmod 8)))
               (#.(+ 0 (ash 1 8)) (handle-x-y 0 1))
               (#.(+ 0 (ash 3 8)) (handle-x-y 0 3))
               (#.(+ 0 (ash 5 8)) (handle-x-y 0 5))
@@ -195,7 +202,7 @@
          (factor 0)
          (factorh 1)
          (qh (ceiling (floor (sqrt sieve-size)) 2)))
-    (declare (fixnum sieve-size sieve-sizeh factor factorh qh) (type sieve-array-type rawbits))
+    (declare (nonneg-fixnum sieve-size sieve-sizeh factor factorh qh) (type sieve-array-type rawbits))
     (loop do
 
       (loop for num of-type fixnum
@@ -210,7 +217,7 @@
 
       ; factor is an odd number >= 3
       ; (floor (the fixnum (* factor factor)) 2) evals to an even number
-      (set-bits rawbits (floor (the fixnum (* factor factor)) 2) sieve-sizeh factor))
+      (set-bits rawbits (floor (the nonneg-fixnum (* factor factor)) 2) sieve-sizeh factor))
     sieve-state))
 
 
