@@ -5,15 +5,15 @@
 ;;;
 
 
-;(declaim
-;  (optimize (speed 3) (safety 0) (debug 0) (space 0))
-;
-;  (inline nth-bit-set-p)
-;  (inline set-nth-bit)
-;
+(declaim
+  (optimize (speed 3) (safety 0) (debug 0) (space 0))
+
+  (inline nth-bit-set-p)
+  (inline set-nth-bit)
+
 ;  (inline set-bits-simple)
 ;  (inline set-bits-unrolled)
-;  (inline set-bits))
+  (inline set-bits))
 
 
 (defparameter *list-to* 100
@@ -85,12 +85,7 @@
 
 
 (defmacro or-word (a idx pattern)
-  `(progn
-     (when *debug* (format t "word ~d, pattern ~8,'0b ~d~%" ,idx ,pattern ,pattern))
-     (setf (aref ,a ,idx) (logior (aref ,a ,idx) ,pattern))))
-
-
-(defparameter *debug* nil)
+  `(setf (aref ,a ,idx) (logior (aref ,a ,idx) ,pattern)))
 
 
 (defun set-bits-simple (bits first-incl last-excl every-nth)
@@ -124,27 +119,27 @@
 
 (defmacro handle-x-y (startmod skipmod)
   `(progn
-   (loop with c0 of-type fixnum = (floor (+ startmod (* 0 every-nth)) +bits-per-word+)
-         with c1 of-type fixnum = (floor (+ startmod (* 1 every-nth)) +bits-per-word+)
-         with c2 of-type fixnum = (floor (+ startmod (* 2 every-nth)) +bits-per-word+)
-         with c3 of-type fixnum = (floor (+ startmod (* 3 every-nth)) +bits-per-word+)
-         with c4 of-type fixnum = (floor (+ startmod (* 4 every-nth)) +bits-per-word+)
-         with c5 of-type fixnum = (floor (+ startmod (* 5 every-nth)) +bits-per-word+)
-         with c6 of-type fixnum = (floor (+ startmod (* 6 every-nth)) +bits-per-word+)
-         with c7 of-type fixnum = (floor (+ startmod (* 7 every-nth)) +bits-per-word+)
+   (loop with c0 of-type fixnum = (floor (the fixnum (+ ,startmod (the fixnum (* 0 every-nth)))) +bits-per-word+)
+         with c1 of-type fixnum = (floor (the fixnum (+ ,startmod (the fixnum (* 1 every-nth)))) +bits-per-word+)
+         with c2 of-type fixnum = (floor (the fixnum (+ ,startmod (the fixnum (* 2 every-nth)))) +bits-per-word+)
+         with c3 of-type fixnum = (floor (the fixnum (+ ,startmod (the fixnum (* 3 every-nth)))) +bits-per-word+)
+         with c4 of-type fixnum = (floor (the fixnum (+ ,startmod (the fixnum (* 4 every-nth)))) +bits-per-word+)
+         with c5 of-type fixnum = (floor (the fixnum (+ ,startmod (the fixnum (* 5 every-nth)))) +bits-per-word+)
+         with c6 of-type fixnum = (floor (the fixnum (+ ,startmod (the fixnum (* 6 every-nth)))) +bits-per-word+)
+         with c7 of-type fixnum = (floor (the fixnum (+ ,startmod (the fixnum (* 7 every-nth)))) +bits-per-word+)
          for word fixnum
          from bulkstartword
          to (1- bulkendword)
          by every-nth
-         do (or-word bits (+ word c0) (ash 1 (mod (+ startmod (* 0 skipmod)) +bits-per-word+)))
-            (or-word bits (+ word c1) (ash 1 (mod (+ startmod (* 1 skipmod)) +bits-per-word+)))
-            (or-word bits (+ word c2) (ash 1 (mod (+ startmod (* 2 skipmod)) +bits-per-word+)))
-            (or-word bits (+ word c3) (ash 1 (mod (+ startmod (* 3 skipmod)) +bits-per-word+)))
-            (or-word bits (+ word c4) (ash 1 (mod (+ startmod (* 4 skipmod)) +bits-per-word+)))
-            (or-word bits (+ word c5) (ash 1 (mod (+ startmod (* 5 skipmod)) +bits-per-word+)))
-            (or-word bits (+ word c6) (ash 1 (mod (+ startmod (* 6 skipmod)) +bits-per-word+)))
-            (or-word bits (+ word c7) (ash 1 (mod (+ startmod (* 7 skipmod)) +bits-per-word+)))
-         finally (setq first-incl (+ startmod (* word +bits-per-word+))))
+         do (or-word bits (+ word c0) ,(ash 1 (mod (+ startmod (* 0 skipmod)) +bits-per-word+)))
+            (or-word bits (+ word c1) ,(ash 1 (mod (+ startmod (* 1 skipmod)) +bits-per-word+)))
+            (or-word bits (+ word c2) ,(ash 1 (mod (+ startmod (* 2 skipmod)) +bits-per-word+)))
+            (or-word bits (+ word c3) ,(ash 1 (mod (+ startmod (* 3 skipmod)) +bits-per-word+)))
+            (or-word bits (+ word c4) ,(ash 1 (mod (+ startmod (* 4 skipmod)) +bits-per-word+)))
+            (or-word bits (+ word c5) ,(ash 1 (mod (+ startmod (* 5 skipmod)) +bits-per-word+)))
+            (or-word bits (+ word c6) ,(ash 1 (mod (+ startmod (* 6 skipmod)) +bits-per-word+)))
+            (or-word bits (+ word c7) ,(ash 1 (mod (+ startmod (* 7 skipmod)) +bits-per-word+)))
+         finally (setq first-incl (+ ,startmod (the fixnum (* word +bits-per-word+)))))
 
    (set-bits-simple bits first-incl last-excl every-nth)))
 
@@ -162,9 +157,10 @@
 
           (let ((startmod (mod first-incl +bits-per-word+))
                 (skipmod (mod every-nth +bits-per-word+))
-                (bulkendword (floor (- last-excl (* +bits-per-word+ every-nth)) +bits-per-word+)))
+                (bulkendword (floor (- last-excl (the fixnum (* +bits-per-word+ every-nth))) +bits-per-word+)))
             (declare (fixnum startmod skipmod bulkendword))
-            (case (+ startmod (ash skipmod 8))
+            ;(format t "startmod ~d skipmod ~d last-excl - first-incl ~d~%" startmod skipmod (- last-excl first-incl))
+            (case (the fixnum (+ startmod (ash skipmod 8)))
               (#.(+ 0 (ash 1 8)) (handle-x-y 0 1))
               (#.(+ 0 (ash 3 8)) (handle-x-y 0 3))
               (#.(+ 0 (ash 5 8)) (handle-x-y 0 5))
@@ -183,8 +179,7 @@
               (#.(+ 6 (ash 7 8)) (handle-x-y 6 7))
 
               (t
-               (error "unexpected"))))
-               ;(set-bits-unrolled bits first-incl last-excl every-nth))))
+               (error "can't happen"))))
 
       (set-bits-unrolled bits first-incl last-excl every-nth))))
 
@@ -265,7 +260,6 @@ according to the historical data in +results+."
     (if (and (test) hist (= (count-primes sieve-state) hist)) "yes" "no")))
 
 
-;#+nil
 (let* ((passes 0)
        (start (get-internal-real-time))
        (end (+ start (* internal-time-units-per-second 5)))
@@ -279,16 +273,17 @@ according to the historical data in +results+."
   (let* ((duration  (/ (- (get-internal-real-time) start) internal-time-units-per-second))
          (avg (/ duration passes)))
     (when *list-to* (list-primes result))
-    (format *error-output* "Algorithm: base w/ bitops  Passes: ~d  Time: ~f Avg: ~f ms Count: ~d  Valid: ~A~%"
+    (format *error-output* "Algorithm: base w/ modulo  Passes: ~d  Time: ~f Avg: ~f ms Count: ~d  Valid: ~A~%"
             passes duration (* 1000 avg) (count-primes result) (validate result))
 
-    (format t "mayerrobert-clb;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
+    (format t "mayerrobert-cl-modulo;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
 
 ;(disassemble 'set-bits)
 
 
 #+nil
 (progn
+(defparameter *debug* nil)
 (defparameter *words* 10)
 (defparameter *a* (make-array *words* :element-type 'sieve-element-type))
 
