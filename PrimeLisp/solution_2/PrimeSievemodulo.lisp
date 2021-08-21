@@ -89,66 +89,54 @@
 
 (defparameter *debug* nil)
 
+(defun set-bits-simple (bits first-incl last-excl every-nth)
+  (declare (type fixnum first-incl last-excl every-nth)
+           (type sieve-array-type bits))
+  (loop while (< first-incl last-excl)
+        do (set-nth-bit bits first-incl)
+           (incf first-incl every-nth)))
+
 (defun set-bits (bits first-incl last-excl every-nth)
   "Set every every-nth bit in array bits between first-incl and last-excl."
   (declare (type fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
 
-;  (let ((l +bits-per-word+))
-;    (format t "every = ~4d, every % l = ~2d, first = ~6d, first % l = ~2d, n-ops = ~d~%"
-;            every-nth (mod every-nth l) first-incl (mod first-incl l) (floor (- 500000 first-incl) every-nth)))
-
   (let ((startmod (mod first-incl +bits-per-word+))
         (skipmod (mod every-nth +bits-per-word+)))
   (case skipmod
     (3
-     (let* ((i first-incl)
-            (span (* +bits-per-word+ every-nth))
-
-            (bulkstartword (floor first-incl +bits-per-word+))
+     (let* ((bulkstartword (floor first-incl +bits-per-word+))
             (bulkstart     (* bulkstartword +bits-per-word+))
 
-            (bulkendword   (floor (- last-excl span) +bits-per-word+))
-            (bulkend       (* bulkendword +bits-per-word+))
+            (bulkendword   (floor (- last-excl (* +bits-per-word+ every-nth)) +bits-per-word+))
             )
-       (declare (fixnum i span bulkstartword bulkstart bulkendword bulkend))
-
-       (when *debug*
-         (format t "first-incl ~d, last-excl ~d, every ~d~%" first-incl last-excl every-nth)
-         (format t "bulkstart  ~d, bulkend   ~d, end   ~d~%" bulkstart bulkend last-excl)
-         (format t "bulkstartw ~d, bulkendw  ~d, end   ~d~%" bulkstartword bulkendword last-excl)
-         (format t "span ~d, startmod   ~d~%" span startmod))
+       (declare (fixnum bulkstartword bulkstart bulkendword))
 
        (when (< bulkstart last-excl)
 
-;       (loop while (< i bulkend)
-;             do ;(set-nth-bit bits i)
-;                (or-word bits
-;                         (ash i #.(- (logcount (1- +bits-per-word+))))
-;                         (ash 1 (logand i #.(1- +bits-per-word+))))
-;                (incf i every-nth))
+         (loop with c0 of-type fixnum = (floor (+ startmod (* 0 every-nth)) +bits-per-word+)
+               with c1 of-type fixnum = (floor (+ startmod (* 1 every-nth)) +bits-per-word+)
+               with c2 of-type fixnum = (floor (+ startmod (* 2 every-nth)) +bits-per-word+)
+               with c3 of-type fixnum = (floor (+ startmod (* 3 every-nth)) +bits-per-word+)
+               with c4 of-type fixnum = (floor (+ startmod (* 4 every-nth)) +bits-per-word+)
+               with c5 of-type fixnum = (floor (+ startmod (* 5 every-nth)) +bits-per-word+)
+               with c6 of-type fixnum = (floor (+ startmod (* 6 every-nth)) +bits-per-word+)
+               with c7 of-type fixnum = (floor (+ startmod (* 7 every-nth)) +bits-per-word+)
+               for word fixnum
+               from bulkstartword
+               to (1- bulkendword)
+               by every-nth
+               do (or-word bits (+ word c0) (ash 1 (mod (+ startmod (* 0 skipmod)) +bits-per-word+)))
+                  (or-word bits (+ word c1) (ash 1 (mod (+ startmod (* 1 skipmod)) +bits-per-word+)))
+                  (or-word bits (+ word c2) (ash 1 (mod (+ startmod (* 2 skipmod)) +bits-per-word+)))
+                  (or-word bits (+ word c3) (ash 1 (mod (+ startmod (* 3 skipmod)) +bits-per-word+)))
+                  (or-word bits (+ word c4) (ash 1 (mod (+ startmod (* 4 skipmod)) +bits-per-word+)))
+                  (or-word bits (+ word c5) (ash 1 (mod (+ startmod (* 5 skipmod)) +bits-per-word+)))
+                  (or-word bits (+ word c6) (ash 1 (mod (+ startmod (* 6 skipmod)) +bits-per-word+)))
+                  (or-word bits (+ word c7) (ash 1 (mod (+ startmod (* 7 skipmod)) +bits-per-word+)))
+               finally (setq first-incl (+ startmod (* word +bits-per-word+)))))
 
-       (loop for word fixnum
-             from bulkstartword
-             to (1- bulkendword)
-             by every-nth
-             do (or-word bits (+ word (floor (+ startmod (* 0 every-nth)) +bits-per-word+)) (ash 1 (mod (+ startmod (* 0 every-nth)) +bits-per-word+)))
-                (or-word bits (+ word (floor (+ startmod (* 1 every-nth)) +bits-per-word+)) (ash 1 (mod (+ startmod (* 1 every-nth)) +bits-per-word+)))
-                (or-word bits (+ word (floor (+ startmod (* 2 every-nth)) +bits-per-word+)) (ash 1 (mod (+ startmod (* 2 every-nth)) +bits-per-word+)))
-                (or-word bits (+ word (floor (+ startmod (* 3 every-nth)) +bits-per-word+)) (ash 1 (mod (+ startmod (* 3 every-nth)) +bits-per-word+)))
-                (or-word bits (+ word (floor (+ startmod (* 4 every-nth)) +bits-per-word+)) (ash 1 (mod (+ startmod (* 4 every-nth)) +bits-per-word+)))
-                (or-word bits (+ word (floor (+ startmod (* 5 every-nth)) +bits-per-word+)) (ash 1 (mod (+ startmod (* 5 every-nth)) +bits-per-word+)))
-                (or-word bits (+ word (floor (+ startmod (* 6 every-nth)) +bits-per-word+)) (ash 1 (mod (+ startmod (* 6 every-nth)) +bits-per-word+)))
-                (or-word bits (+ word (floor (+ startmod (* 7 every-nth)) +bits-per-word+)) (ash 1 (mod (+ startmod (* 7 every-nth)) +bits-per-word+)))
-             finally (setq i (+ startmod (* word +bits-per-word+)))
-        )
-        )
-
-       (when *debug* (format t "endloop: [~d .. ~d[~%" i last-excl))
-       (loop while (< i last-excl)
-             do (set-nth-bit bits i)
-                (incf i every-nth))
-       ))
+       (set-bits-simple bits first-incl last-excl every-nth)))
 
     (t
      ; use an unrolled loop to set every every-th bit to 1
@@ -166,9 +154,7 @@
                 (set-nth-bit bits (+ i every-nth-times-3))
                 (incf i every-nth-times-4))
 
-       (loop while (< i last-excl)
-             do (set-nth-bit bits i)
-                (incf i every-nth)))))))
+       (set-bits-simple bits i last-excl every-nth))))))
 
 
 (defun run-sieve (sieve-state)
