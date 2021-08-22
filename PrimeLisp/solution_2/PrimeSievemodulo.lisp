@@ -5,14 +5,23 @@
 ;;;
 
 
+#+(and :sbcl :x86-64)
+(progn
+  (when (equalp "2.0.0" (lisp-implementation-version))
+    (load "peephole-2.0.0.lisp"))
+  (when (equalp "2.1.7" (lisp-implementation-version))
+    (load "peephole-2.1.7.lisp")))
+
+
 (declaim
   (optimize (speed 3) (safety 0) (debug 0) (space 0))
 
+  (inline or-word)
   (inline nth-bit-set-p)
   (inline set-nth-bit)
 
-;  (inline set-bits-simple)
-;  (inline set-bits-unrolled)
+  (inline set-bits-simple)
+  (inline set-bits-unrolled)
   (inline set-bits))
 
 
@@ -76,22 +85,18 @@
     (logbitp r (aref a q))))
 
 
+(defun or-word (a idx pattern)
+  (setf #1=(aref a idx) (logior #1# pattern)))
+
+
 (defun set-nth-bit (a n)
   "Set n-th bit in array a to 1."
   (declare (type sieve-array-type a)
            (type nonneg-fixnum n))
   (multiple-value-bind (q r) (floor n +bits-per-word+)
     (declare (nonneg-fixnum q r))
-    (setf #1=(aref a q)
-         (logior #1# (expt 2 r)))) 0)
-
-
-;(defmacro or-word (a idx pattern)
-;  `(setf (aref ,a ,idx) (logior (aref ,a ,idx) ,pattern)))
-
-(declaim (inline or-word))
-(defun or-word (a idx pattern)
-  (setf (aref a idx) (logior (aref a idx) pattern)))
+    (or-word a q (expt 2 r)))
+  0)
 
 
 (defun set-bits-simple (bits first-incl last-excl every-nth)
@@ -123,31 +128,31 @@
     (set-bits-simple bits i last-excl every-nth)))
 
 
-(defmacro handle-x-y (startmod skipmod)
+(defmacro generate-x-y-loop (startmod skipmod)
   `(progn
-   (loop with c0 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 0 every-nth)))) +bits-per-word+)
-         with c1 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 1 every-nth)))) +bits-per-word+)
-         with c2 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 2 every-nth)))) +bits-per-word+)
-         with c3 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 3 every-nth)))) +bits-per-word+)
-         with c4 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 4 every-nth)))) +bits-per-word+)
-         with c5 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 5 every-nth)))) +bits-per-word+)
-         with c6 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 6 every-nth)))) +bits-per-word+)
-         with c7 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 7 every-nth)))) +bits-per-word+)
-         for word of-type nonneg-fixnum
-         from bulkstartword
-         to (1- bulkendword)
-         by every-nth
-         do (or-word bits (+ word c0) ,(ash 1 (mod (+ startmod (* 0 skipmod)) +bits-per-word+)))
-            (or-word bits (+ word c1) ,(ash 1 (mod (+ startmod (* 1 skipmod)) +bits-per-word+)))
-            (or-word bits (+ word c2) ,(ash 1 (mod (+ startmod (* 2 skipmod)) +bits-per-word+)))
-            (or-word bits (+ word c3) ,(ash 1 (mod (+ startmod (* 3 skipmod)) +bits-per-word+)))
-            (or-word bits (+ word c4) ,(ash 1 (mod (+ startmod (* 4 skipmod)) +bits-per-word+)))
-            (or-word bits (+ word c5) ,(ash 1 (mod (+ startmod (* 5 skipmod)) +bits-per-word+)))
-            (or-word bits (+ word c6) ,(ash 1 (mod (+ startmod (* 6 skipmod)) +bits-per-word+)))
-            (or-word bits (+ word c7) ,(ash 1 (mod (+ startmod (* 7 skipmod)) +bits-per-word+)))
-         finally (setq first-incl (+ ,startmod (the nonneg-fixnum (* word +bits-per-word+)))))
-
-   (set-bits-simple bits first-incl last-excl every-nth)))
+     (loop with c0 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 0 every-nth)))) +bits-per-word+)
+           with c1 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 1 every-nth)))) +bits-per-word+)
+           with c2 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 2 every-nth)))) +bits-per-word+)
+           with c3 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 3 every-nth)))) +bits-per-word+)
+           with c4 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 4 every-nth)))) +bits-per-word+)
+           with c5 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 5 every-nth)))) +bits-per-word+)
+           with c6 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 6 every-nth)))) +bits-per-word+)
+           with c7 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 7 every-nth)))) +bits-per-word+)
+           for word of-type nonneg-fixnum
+           from bulkstartword
+           to (1- bulkendword)
+           by every-nth
+           do (or-word bits (+ word c0) ,(ash 1 (mod (+ startmod (* 0 skipmod)) +bits-per-word+)))
+              (or-word bits (+ word c1) ,(ash 1 (mod (+ startmod (* 1 skipmod)) +bits-per-word+)))
+              (or-word bits (+ word c2) ,(ash 1 (mod (+ startmod (* 2 skipmod)) +bits-per-word+)))
+              (or-word bits (+ word c3) ,(ash 1 (mod (+ startmod (* 3 skipmod)) +bits-per-word+)))
+              (or-word bits (+ word c4) ,(ash 1 (mod (+ startmod (* 4 skipmod)) +bits-per-word+)))
+              (or-word bits (+ word c5) ,(ash 1 (mod (+ startmod (* 5 skipmod)) +bits-per-word+)))
+              (or-word bits (+ word c6) ,(ash 1 (mod (+ startmod (* 6 skipmod)) +bits-per-word+)))
+              (or-word bits (+ word c7) ,(ash 1 (mod (+ startmod (* 7 skipmod)) +bits-per-word+)))
+           finally (setq first-incl (+ ,startmod (the nonneg-fixnum (* word +bits-per-word+)))))
+  
+     (set-bits-simple bits first-incl last-excl every-nth)))
 
 
 (defun set-bits (bits first-incl last-excl every-nth)
@@ -169,26 +174,26 @@
 
             ; first-incl is even, every-nth is odd, see comment in run-sieve below.
             ; therefore only a few combinations can happen: startmod [0 2 4 6] and skipmod [1 3 5 7]
-            (case (the nonneg-fixnum (+ startmod (ash skipmod 8)))
-              (#.(+ 0 (ash 1 8)) (handle-x-y 0 1))
-              (#.(+ 0 (ash 3 8)) (handle-x-y 0 3))
-              (#.(+ 0 (ash 5 8)) (handle-x-y 0 5))
-              (#.(+ 0 (ash 7 8)) (handle-x-y 0 7))
-              (#.(+ 2 (ash 1 8)) (handle-x-y 2 1))
-              (#.(+ 2 (ash 3 8)) (handle-x-y 2 3))
-              (#.(+ 2 (ash 5 8)) (handle-x-y 2 5))
-              (#.(+ 2 (ash 7 8)) (handle-x-y 2 7))
-              (#.(+ 4 (ash 1 8)) (handle-x-y 4 1))
-              (#.(+ 4 (ash 3 8)) (handle-x-y 4 3))
-              (#.(+ 4 (ash 5 8)) (handle-x-y 4 5))
-              (#.(+ 4 (ash 7 8)) (handle-x-y 4 7))
-              (#.(+ 6 (ash 1 8)) (handle-x-y 6 1))
-              (#.(+ 6 (ash 3 8)) (handle-x-y 6 3))
-              (#.(+ 6 (ash 5 8)) (handle-x-y 6 5))
-              (#.(+ 6 (ash 7 8)) (handle-x-y 6 7))
-
-              (t
-               (error "can't happen"))))
+            ; if the ecase keys are small (and maybe dense?) fixnums then SBCL will compile the ecase into a jump table
+            ; doesn't make a big difference, tough: most of the time is spent in the bit-setting loops
+            (ecase (the fixnum (+ startmod (ash skipmod 2)))
+              (#.(+ 0 (ash 1 2)) (generate-x-y-loop 0 1))
+              (#.(+ 0 (ash 3 2)) (generate-x-y-loop 0 3))
+              (#.(+ 0 (ash 5 2)) (generate-x-y-loop 0 5))
+              (#.(+ 0 (ash 7 2)) (generate-x-y-loop 0 7))
+              (#.(+ 2 (ash 1 2)) (generate-x-y-loop 2 1))
+              (#.(+ 2 (ash 3 2)) (generate-x-y-loop 2 3))
+              (#.(+ 2 (ash 5 2)) (generate-x-y-loop 2 5))
+              (#.(+ 2 (ash 7 2)) (generate-x-y-loop 2 7))
+              (#.(+ 4 (ash 1 2)) (generate-x-y-loop 4 1))
+              (#.(+ 4 (ash 3 2)) (generate-x-y-loop 4 3))
+              (#.(+ 4 (ash 5 2)) (generate-x-y-loop 4 5))
+              (#.(+ 4 (ash 7 2)) (generate-x-y-loop 4 7))
+              (#.(+ 6 (ash 1 2)) (generate-x-y-loop 6 1))
+              (#.(+ 6 (ash 3 2)) (generate-x-y-loop 6 3))
+              (#.(+ 6 (ash 5 2)) (generate-x-y-loop 6 5))
+              (#.(+ 6 (ash 7 2)) (generate-x-y-loop 6 7))
+              ))
 
       (set-bits-unrolled bits first-incl last-excl every-nth))))
 
