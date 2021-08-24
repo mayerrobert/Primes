@@ -56,8 +56,8 @@
 
 
 (deftype number-t ()
-  `(integer 0 ,most-positive-fixnum))
-  ;`(unsigned-byte 64))
+  ;`(integer 0 ,most-positive-fixnum))
+  `(unsigned-byte 64))
 
 
 (defun run-sieve (sieve-state)
@@ -66,7 +66,7 @@
   (loop with rawbits    of-type simple-bit-vector  = (sieve-state-a sieve-state)
         with sieve-size of-type number-t = (sieve-state-maxints sieve-state)
         with q          of-type number-t = (the number-t (isqrt sieve-size))
-        with end        of-type number-t = (ceiling sieve-size 2)
+        with end        of-type number-t = (floor (the number-t (1+ sieve-size)) 2) ; ceiling with (unsigned-byte 64) gives slow code
         with factor     of-type number-t = 3
 
         while (<= factor q)
@@ -82,7 +82,7 @@
              (declare (type number-t i factor-times-2 factor-times-3 factor-times-4))
 
              ; use an unrolled loop to set every factor-th bit to 1
-             (when (> end (+ i factor-times-4))
+             (when (> end (the number-t (+ i factor-times-4)))
                (loop with end1 of-type number-t = (- end factor-times-4)
                      while (< i end1)
                      do (setf (sbit rawbits i) 1)
@@ -174,3 +174,5 @@ according to the historical data in +results+."
             passes duration (* 1000 avg) (count-primes result) (validate result))
 
     (format t "mayerrobert-cl-hashdot;~d;~f;1;algorithm=base,faithful=no,bits=1~%" passes duration)))
+
+;(disassemble 'run-sieve)
