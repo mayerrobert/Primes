@@ -82,7 +82,7 @@
              (declare (type number-t i factor-times-2 factor-times-3 factor-times-4))
 
              ; use an unrolled loop to set every factor-th bit to 1
-             (when (> end factor-times-4)
+             (when (> end (+ i factor-times-4))
                (loop with end1 of-type number-t = (- end factor-times-4)
                      while (< i end1)
                      do (setf (sbit rawbits i) 1)
