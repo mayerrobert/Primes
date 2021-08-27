@@ -49,6 +49,7 @@
 
 (deftype nonneg-fixnum ()
   `(integer 0 ,most-positive-fixnum))
+  ;`(unsigned-byte 64))
 
 (deftype sieve-element-type ()
   `(unsigned-byte ,+bits-per-word+))
@@ -114,16 +115,17 @@
   (let* ((i first-incl)
          (every-nth-times-2 (+ every-nth every-nth))
          (every-nth-times-3 (+ every-nth-times-2 every-nth))
-         (every-nth-times-4 (+ every-nth-times-3 every-nth))
-         (end1 (- last-excl every-nth-times-3)))
-    (declare (nonneg-fixnum i every-nth-times-2 every-nth-times-3 every-nth-times-4 end1))
+         (every-nth-times-4 (+ every-nth-times-3 every-nth)))
+    (declare (nonneg-fixnum i every-nth-times-2 every-nth-times-3 every-nth-times-4))
 
-    (loop while (< i end1)
-          do (set-nth-bit bits i)
-             (set-nth-bit bits (+ i every-nth))
-             (set-nth-bit bits (+ i every-nth-times-2))
-             (set-nth-bit bits (+ i every-nth-times-3))
-             (incf i every-nth-times-4))
+    (when (> last-excl (the nonneg-fixnum (+ i every-nth-times-4)))
+      (loop with end1 of-type nonneg-fixnum = (- last-excl every-nth-times-4)
+            while (< i end1)
+            do (set-nth-bit bits i)
+               (set-nth-bit bits (+ i every-nth))
+               (set-nth-bit bits (+ i every-nth-times-2))
+               (set-nth-bit bits (+ i every-nth-times-3))
+               (incf i every-nth-times-4)))
 
     (set-bits-simple bits i last-excl every-nth)))
 
@@ -151,7 +153,7 @@
               (or-word bits (+ word c6) ,(ash 1 (mod (+ startmod (* 6 skipmod)) +bits-per-word+)))
               (or-word bits (+ word c7) ,(ash 1 (mod (+ startmod (* 7 skipmod)) +bits-per-word+)))
            finally (setq first-incl (+ ,startmod (the nonneg-fixnum (* word +bits-per-word+)))))
-  
+
      (set-bits-simple bits first-incl last-excl every-nth)))
 
 
@@ -164,11 +166,12 @@
          (bulkstart     (* bulkstartword +bits-per-word+)))
     (declare (nonneg-fixnum bulkstartword bulkstart))
 
-    (if (< bulkstart last-excl)
+    (if (and (> last-excl (the nonneg-fixnum (* +bits-per-word+ every-nth)))
+             (< bulkstart last-excl))
 
           (let ((startmod (mod first-incl +bits-per-word+))
                 (skipmod (mod every-nth +bits-per-word+))
-                (bulkendword (floor (- last-excl (the nonneg-fixnum (* +bits-per-word+ every-nth))) +bits-per-word+)))
+                (bulkendword (floor (the nonneg-fixnum (- last-excl (the nonneg-fixnum (* +bits-per-word+ every-nth)))) +bits-per-word+)))
             (declare (nonneg-fixnum startmod skipmod bulkendword))
             ;(format t "startmod ~d, skipmod ~d, skip ~d, last-excl - first-incl ~d, bits to set ~d~%" startmod skipmod every-nth #1=(- last-excl first-incl) (floor #1# every-nth))
 
@@ -274,6 +277,8 @@ according to the historical data in +results+."
     (if (and (test) hist (= (count-primes sieve-state) hist)) "yes" "no")))
 
 
+;(require :sb-sprof) (sb-sprof:with-profiling (:max-samples 1000 :report :flat :loop nil)
+(time
 (let* ((passes 0)
        (start (get-internal-real-time))
        (end (+ start (* internal-time-units-per-second 5)))
@@ -291,5 +296,9 @@ according to the historical data in +results+."
             passes duration (* 1000 avg) (count-primes result) (validate result))
 
     (format t "mayerrobert-cl-modulo;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
+)
 
+;(disassemble 'set-nth-bit)
+;(disassemble 'set-bits-simple)
+;(disassemble 'set-bits-unrolled)
 ;(disassemble 'set-bits)
