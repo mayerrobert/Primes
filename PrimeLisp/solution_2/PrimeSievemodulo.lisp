@@ -136,14 +136,8 @@
 
 (defmacro generate-x-y-loop (startmod skipmod)
   `(progn
-     (loop with c0 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 0 every-nth)))) +bits-per-word+)
-           with c1 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 1 every-nth)))) +bits-per-word+)
-           with c2 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 2 every-nth)))) +bits-per-word+)
-           with c3 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 3 every-nth)))) +bits-per-word+)
-           with c4 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 4 every-nth)))) +bits-per-word+)
-           with c5 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 5 every-nth)))) +bits-per-word+)
-           with c6 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 6 every-nth)))) +bits-per-word+)
-           with c7 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 7 every-nth)))) +bits-per-word+)
+     (loop ,@(loop for n from 0 to 7
+                   append `(with ,(sym "C" n) of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* ,n every-nth)))) +bits-per-word+)))
            for word of-type nonneg-fixnum
            from bulkstartword
            to (1- bulkendword)
