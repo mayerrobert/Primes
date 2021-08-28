@@ -154,8 +154,8 @@
   ; therefore only a few combinations can happen: startmod [0 2 4 6] and skipmod [1 3 5 7]
   ; if the ecase keys are small (and maybe dense?) fixnums then SBCL will compile the ecase into a jump table
   ; doesn't make a big difference, tough: most of the time is spent in the bit-setting loops
-  `(ecase (the fixnum (+ startmod (ash skipmod 2)))
-     ,@(loop for x from 0 to (- +bits-per-word+ 2) by 2
+  `(ecase (the nonneg-fixnum (+ startmod (ash skipmod 2)))
+     ,@(loop for x from 0 to (- +bits-per-word+ 2) by 2 ; actually this could be 4
              append (loop for y from 1 to (1- +bits-per-word+) by 2
                           collect `(,(+ x (ash y 2)) (generate-x-y-loop ,x ,y))))))
 
