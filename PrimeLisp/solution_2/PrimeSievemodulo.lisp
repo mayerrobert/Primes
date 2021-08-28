@@ -136,13 +136,13 @@
 
 (defmacro generate-x-y-loop (startmod skipmod)
   `(progn
-     (loop ,@(loop for n from 0 to 7
+     (loop ,@(loop for n from 0 to (1- +bits-per-word+)
                    append `(with ,(sym "C" n) of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* ,n every-nth)))) +bits-per-word+)))
            for word of-type nonneg-fixnum
            from bulkstartword
            to (1- bulkendword)
            by every-nth
-           do ,@(loop for n from 0 to 7
+           do ,@(loop for n from 0 to (1- +bits-per-word+)
                       collect `(or-word bits (+ word ,(sym "C" n)) ,(ash 1 (mod (+ startmod (* n skipmod)) +bits-per-word+))))
            finally (setq first-incl (+ ,startmod (the nonneg-fixnum (* word +bits-per-word+)))))
 
@@ -155,8 +155,8 @@
   ; if the ecase keys are small (and maybe dense?) fixnums then SBCL will compile the ecase into a jump table
   ; doesn't make a big difference, tough: most of the time is spent in the bit-setting loops
   `(ecase (the fixnum (+ startmod (ash skipmod 2)))
-     ,@(loop for x from 0 to 6 by 2
-             append (loop for y from 1 to 7 by 2
+     ,@(loop for x from 0 to (- +bits-per-word+ 2) by 2
+             append (loop for y from 1 to (1- +bits-per-word+) by 2
                           collect `(,(+ x (ash y 2)) (generate-x-y-loop ,x ,y))))))
 
 
