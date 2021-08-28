@@ -130,6 +130,10 @@
     (set-bits-simple bits i last-excl every-nth)))
 
 
+(defun sym (s1 s2)
+  (intern (format nil "~A~A" s1 s2)))
+
+
 (defmacro generate-x-y-loop (startmod skipmod)
   `(progn
      (loop with c0 of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* 0 every-nth)))) +bits-per-word+)
@@ -144,14 +148,8 @@
            from bulkstartword
            to (1- bulkendword)
            by every-nth
-           do (or-word bits (+ word c0) ,(ash 1 (mod (+ startmod (* 0 skipmod)) +bits-per-word+)))
-              (or-word bits (+ word c1) ,(ash 1 (mod (+ startmod (* 1 skipmod)) +bits-per-word+)))
-              (or-word bits (+ word c2) ,(ash 1 (mod (+ startmod (* 2 skipmod)) +bits-per-word+)))
-              (or-word bits (+ word c3) ,(ash 1 (mod (+ startmod (* 3 skipmod)) +bits-per-word+)))
-              (or-word bits (+ word c4) ,(ash 1 (mod (+ startmod (* 4 skipmod)) +bits-per-word+)))
-              (or-word bits (+ word c5) ,(ash 1 (mod (+ startmod (* 5 skipmod)) +bits-per-word+)))
-              (or-word bits (+ word c6) ,(ash 1 (mod (+ startmod (* 6 skipmod)) +bits-per-word+)))
-              (or-word bits (+ word c7) ,(ash 1 (mod (+ startmod (* 7 skipmod)) +bits-per-word+)))
+           do ,@(loop for n from 0 to 7
+                      collect `(or-word bits (+ word ,(sym "C" n)) ,(ash 1 (mod (+ startmod (* n skipmod)) +bits-per-word+))))
            finally (setq first-incl (+ ,startmod (the nonneg-fixnum (* word +bits-per-word+)))))
 
      (set-bits-simple bits first-incl last-excl every-nth)))
