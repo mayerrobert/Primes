@@ -157,6 +157,17 @@
      (set-bits-simple bits first-incl last-excl every-nth)))
 
 
+(defmacro generate-ecase ()
+  ; first-incl is even, every-nth is odd, see comment in run-sieve below.
+  ; therefore only a few combinations can happen: startmod [0 2 4 6] and skipmod [1 3 5 7]
+  ; if the ecase keys are small (and maybe dense?) fixnums then SBCL will compile the ecase into a jump table
+  ; doesn't make a big difference, tough: most of the time is spent in the bit-setting loops
+  `(ecase (the fixnum (+ startmod (ash skipmod 2)))
+     ,@(loop for x from 0 to 6 by 2
+             append (loop for y from 1 to 7 by 2
+                          collect `(,(+ x (ash y 2)) (generate-x-y-loop ,x ,y))))))
+
+
 (defun set-bits (bits first-incl last-excl every-nth)
   "Set every every-nth bit in array bits between first-incl and last-excl."
   (declare (type nonneg-fixnum first-incl last-excl every-nth)
@@ -175,28 +186,7 @@
             (declare (nonneg-fixnum startmod skipmod bulkendword))
             ;(format t "startmod ~d, skipmod ~d, skip ~d, last-excl - first-incl ~d, bits to set ~d~%" startmod skipmod every-nth #1=(- last-excl first-incl) (floor #1# every-nth))
 
-            ; first-incl is even, every-nth is odd, see comment in run-sieve below.
-            ; therefore only a few combinations can happen: startmod [0 2 4 6] and skipmod [1 3 5 7]
-            ; if the ecase keys are small (and maybe dense?) fixnums then SBCL will compile the ecase into a jump table
-            ; doesn't make a big difference, tough: most of the time is spent in the bit-setting loops
-            (ecase (the fixnum (+ startmod (ash skipmod 2)))
-              (#.(+ 0 (ash 1 2)) (generate-x-y-loop 0 1))
-              (#.(+ 0 (ash 3 2)) (generate-x-y-loop 0 3))
-              (#.(+ 0 (ash 5 2)) (generate-x-y-loop 0 5))
-              (#.(+ 0 (ash 7 2)) (generate-x-y-loop 0 7))
-              (#.(+ 2 (ash 1 2)) (generate-x-y-loop 2 1))
-              (#.(+ 2 (ash 3 2)) (generate-x-y-loop 2 3))
-              (#.(+ 2 (ash 5 2)) (generate-x-y-loop 2 5))
-              (#.(+ 2 (ash 7 2)) (generate-x-y-loop 2 7))
-              (#.(+ 4 (ash 1 2)) (generate-x-y-loop 4 1))
-              (#.(+ 4 (ash 3 2)) (generate-x-y-loop 4 3))
-              (#.(+ 4 (ash 5 2)) (generate-x-y-loop 4 5))
-              (#.(+ 4 (ash 7 2)) (generate-x-y-loop 4 7))
-              (#.(+ 6 (ash 1 2)) (generate-x-y-loop 6 1))
-              (#.(+ 6 (ash 3 2)) (generate-x-y-loop 6 3))
-              (#.(+ 6 (ash 5 2)) (generate-x-y-loop 6 5))
-              (#.(+ 6 (ash 7 2)) (generate-x-y-loop 6 7))
-              ))
+            (generate-ecase))
 
       (set-bits-unrolled bits first-incl last-excl every-nth))))
 
