@@ -8,9 +8,12 @@
 (declaim
   (optimize (speed 3) (safety 0) (debug 0) (space 0))
 
+  (inline or-word)
   (inline nth-bit-set-p)
   (inline set-nth-bit)
-  (inline set-bits))
+
+  (inline set-bits-simple)
+  (inline set-bits-unrolled))
 
 
 (defparameter *list-to* 100
@@ -35,6 +38,10 @@
 #+64-bit (defconstant +bits-per-word+ 64)
 #-64-bit (defconstant +bits-per-word+ 32)
 
+(deftype nonneg-fixnum ()
+  `(integer 0 ,most-positive-fixnum))
+  ;`(unsigned-byte ,+bits-per-word+))
+
 (deftype sieve-element-type ()
   `(unsigned-byte ,+bits-per-word+))
 
@@ -44,7 +51,7 @@
 
 (defclass sieve-state ()
   ((maxints :initarg :maxints
-            :type fixnum
+            :type nonneg-fixnum
             :accessor sieve-state-maxints)
 
    (a       :initarg :a
@@ -53,7 +60,7 @@
 
 
 (defun create-sieve (maxints)
-  (declare (fixnum maxints))
+  (declare (nonneg-fixnum maxints))
   (make-instance 'sieve-state
     :maxints maxints
     :a (make-array (ceiling (ceiling maxints +bits-per-word+) 2)
@@ -64,45 +71,78 @@
 (defun nth-bit-set-p (a n)
   "Returns t if n-th bit is set in array a, nil otherwise."
   (declare (sieve-array-type a)
-           (fixnum n))
+           (nonneg-fixnum n))
   (multiple-value-bind (q r) (floor n +bits-per-word+)
-    (declare (fixnum q r))
+    (declare (nonneg-fixnum q r))
     (logbitp r (aref a q))))
+
+
+(defun or-word (a idx pattern)
+  (declare (type sieve-array-type a) (type nonneg-fixnum idx) (type sieve-element-type pattern))
+  (setf #1=(aref a idx) (logior #1# pattern)) 0)
 
 
 (defun set-nth-bit (a n)
   "Set n-th bit in array a to 1."
   (declare (type sieve-array-type a)
-           (type fixnum n))
+           (type nonneg-fixnum n))
   (multiple-value-bind (q r) (floor n +bits-per-word+)
-    (declare (fixnum q r))
-    (setf #1=(aref a q)
-         (logior #1# (expt 2 r)))) 0)
+    (declare (nonneg-fixnum q r))
+    (or-word a q (expt 2 r))))
 
 
-(defun set-bits (bits first-incl last-excl every-nth)
+#+nil
+(defun set-nth-bit (a n)
+  "Set n-th bit in array a to 1."
+  (declare (type sieve-array-type a)
+           (type nonneg-fixnum n))
+  (or-word a (ash n -6) (ash 1 (ldb (byte 6 0) n)))
+  0)
+
+
+#+nil
+(defun set-nth-bit (a n)
+  "Set n-th bit in array a to 1."
+  (declare (type sieve-array-type a)
+           (type nonneg-fixnum n))
+  (let* ((idx (ash n -6))
+         (bit (logand n #x3f))
+         (pattern (ash 1 bit)))
+    (declare (type nonneg-fixnum idx bit pattern))
+    (setf #1=(aref a idx) (logior #1# pattern)))
+  0)
+
+
+(defun set-bits-simple (bits first-incl last-excl every-nth)
+  (declare (type nonneg-fixnum first-incl last-excl every-nth)
+           (type sieve-array-type bits))
+  (loop while (< first-incl last-excl)
+        do (set-nth-bit bits first-incl)
+           (incf first-incl every-nth)))
+
+
+(defun set-bits-unrolled (bits first-incl last-excl every-nth)
   "Set every every-nth bit in array bits between first-incl and last-excl."
-  (declare (type fixnum first-incl last-excl every-nth)
+  (declare (type nonneg-fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
 
   ; use an unrolled loop to set every every-th bit to 1
   (let* ((i first-incl)
          (every-nth-times-2 (+ every-nth every-nth))
          (every-nth-times-3 (+ every-nth-times-2 every-nth))
-         (every-nth-times-4 (+ every-nth-times-3 every-nth))
-         (end1 (- last-excl every-nth-times-3)))
-    (declare (fixnum i every-nth-times-2 every-nth-times-3 every-nth-times-4 end1))
+         (every-nth-times-4 (+ every-nth-times-3 every-nth)))
+    (declare (nonneg-fixnum i every-nth-times-2 every-nth-times-3 every-nth-times-4))
 
-    (loop while (< i end1)
-          do (set-nth-bit bits i)
-             (set-nth-bit bits (+ i every-nth))
-             (set-nth-bit bits (+ i every-nth-times-2))
-             (set-nth-bit bits (+ i every-nth-times-3))
-             (incf i every-nth-times-4))
+    (when (> last-excl (the nonneg-fixnum (+ i every-nth-times-4)))
+      (loop with end1 of-type nonneg-fixnum = (- last-excl every-nth-times-4)
+            while (< i end1)
+            do (set-nth-bit bits i)
+               (set-nth-bit bits (+ i every-nth))
+               (set-nth-bit bits (+ i every-nth-times-2))
+               (set-nth-bit bits (+ i every-nth-times-3))
+               (incf i every-nth-times-4)))
 
-    (loop while (< i last-excl)
-          do (set-nth-bit bits i)
-             (incf i every-nth))))
+    (set-bits-simple bits i last-excl every-nth)))
 
 
 (defun run-sieve (sieve-state)
@@ -114,10 +154,10 @@
          (factor 0)
          (factorh 1)
          (qh (ceiling (floor (sqrt sieve-size)) 2)))
-    (declare (fixnum sieve-size sieve-sizeh factor factorh qh) (type sieve-array-type rawbits))
+    (declare (nonneg-fixnum sieve-size sieve-sizeh factor factorh qh) (type sieve-array-type rawbits))
     (loop do
 
-      (loop for num of-type fixnum
+      (loop for num of-type nonneg-fixnum
             from factorh
             to qh
             while (nth-bit-set-p rawbits num)
@@ -127,7 +167,7 @@
       (when (> factorh qh)
         (return-from run-sieve sieve-state))
 
-      (set-bits rawbits (floor (the fixnum (* factor factor)) 2) sieve-sizeh factor))
+      (set-bits-unrolled rawbits (floor (the nonneg-fixnum (* factor factor)) 2) sieve-sizeh factor))
     sieve-state))
 
 
@@ -136,8 +176,8 @@
   (let ((max (sieve-state-maxints sieve-state))
         (bits (sieve-state-a sieve-state))
         (result 0))
-    (declare (fixnum result))
-    (loop for i fixnum
+    (declare (nonneg-fixnum result))
+    (loop for i of-type nonneg-fixnum
           from 1
           to max
           by 2
@@ -179,11 +219,12 @@ according to the historical data in +results+."
     (if (and (test) hist (= (count-primes sieve-state) hist)) "yes" "no")))
 
 
+(time
 (let* ((passes 0)
        (start (get-internal-real-time))
        (end (+ start (* internal-time-units-per-second 5)))
        result)
-  (declare (fixnum passes))
+  (declare (nonneg-fixnum passes))
 
   (loop while (<= (get-internal-real-time) end)
         do (setq result (run-sieve (create-sieve 1000000)))
@@ -196,3 +237,8 @@ according to the historical data in +results+."
             passes duration (* 1000 avg) (count-primes result) (validate result))
 
     (format t "mayerrobert-clb;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
+)
+
+(disassemble 'or-word)
+(disassemble 'set-nth-bit)
+(disassemble 'set-bits-unrolled)
