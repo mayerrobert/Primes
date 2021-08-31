@@ -5,10 +5,14 @@
 ;;;
 
 
+;(load "qwordvector.lisp")
+
+
 (declaim
   (optimize (speed 3) (safety 0) (debug 0) (space 0))
 
   (inline or-word)
+  (inline or-bit)
   (inline nth-bit-set-p)
   (inline set-nth-bit)
 
@@ -79,16 +83,14 @@
 
 (defun or-word (a idx pattern)
   (declare (type sieve-array-type a) (type nonneg-fixnum idx) (type sieve-element-type pattern))
-  (setf #1=(aref a idx) (logior #1# pattern)) 0)
+  (setf #1=(aref a idx) (logior #1# pattern)))
 
 
-(defun set-nth-bit (a n)
-  "Set n-th bit in array a to 1."
-  (declare (type sieve-array-type a)
-           (type nonneg-fixnum n))
-  (multiple-value-bind (q r) (floor n +bits-per-word+)
-    (declare (nonneg-fixnum q r))
-    (or-word a q (expt 2 r))))
+(defun or-bit (a idx bit)
+  (declare (type sieve-array-type a) (type nonneg-fixnum idx) (type (integer 0 63) bit))
+  (let ((pattern (ash 1 bit)))
+    (declare (type sieve-element-type pattern))
+    (setf #1=(aref a idx) (logior #1# pattern))))
 
 
 #+nil
@@ -96,8 +98,28 @@
   "Set n-th bit in array a to 1."
   (declare (type sieve-array-type a)
            (type nonneg-fixnum n))
-  (or-word a (ash n -6) (ash 1 (ldb (byte 6 0) n)))
-  0)
+  (multiple-value-bind (q r) (floor n +bits-per-word+)
+    (declare (nonneg-fixnum q r))
+    ;(or-word a q (expt 2 r))))
+    (or-bit a q r)))
+
+
+#+nil
+(defun set-nth-bit (a n)
+  "Set n-th bit in array a to 1."
+  (declare (type sieve-array-type a)
+           (type nonneg-fixnum n))
+  (or-word a (ash n -6) (ash 1 (ldb (byte 6 0) n))))
+
+
+;#+nil
+(defun set-nth-bit (a n)
+  "Set n-th bit in array a to 1."
+  (declare (type sieve-array-type a)
+           (type nonneg-fixnum n))
+  ;(or-bit a (ldb (byte 64 0)(ash n -6)) (ldb (byte 64 0) (logand n #x3f))))
+  ;(or-bit a (truly-the nonneg-fixnum (ash n -6)) (truly-the nonneg-fixnum (logand n #x3f))))
+  (or-bit a (ash n -6) (logand n #x3f)))
 
 
 #+nil
@@ -108,9 +130,8 @@
   (let* ((idx (ash n -6))
          (bit (logand n #x3f))
          (pattern (ash 1 bit)))
-    (declare (type nonneg-fixnum idx bit pattern))
-    (setf #1=(aref a idx) (logior #1# pattern)))
-  0)
+    (declare (type nonneg-fixnum idx bit) (type sieve-element-type pattern))
+    (or-bit a idx bit)))
 
 
 (defun set-bits-simple (bits first-incl last-excl every-nth)
@@ -239,6 +260,7 @@ according to the historical data in +results+."
     (format t "mayerrobert-clb;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
 )
 
+(disassemble 'or-bit)
 (disassemble 'or-word)
 (disassemble 'set-nth-bit)
 (disassemble 'set-bits-unrolled)
