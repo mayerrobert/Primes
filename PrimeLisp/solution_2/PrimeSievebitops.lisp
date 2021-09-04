@@ -198,8 +198,7 @@
 (defmacro set-words (startword first n)
   (let ((startbit first))
     `(let* ((tmp 0)
-            (startword ,startword)
-            )
+            (startword ,startword))
        (declare (type sieve-element-type tmp))
        ,@(loop for word
                from 0
@@ -219,8 +218,6 @@
                                                    (incf startbit n)
                                                    (decf startbit +bits-per-word+))))))))
 
-;(macroexpand-1 '(set-words 0 60 11))
-
 
 (defmacro doit (first n)
   `(progn
@@ -231,51 +228,21 @@
            below (- last-excl ,(* n +bits-per-word+))
            by ,(* n +bits-per-word+)
            do (set-words (floor bit +bits-per-word+) ,(mod (+ first (* n +bits-per-word+)) n) ,n)
-           finally (set-bits-unrolled bits (+ bit ,(mod (+ first (* n +bits-per-word+)) n)) last-excl ,n)
-           )
-     ))
+           finally (set-bits-unrolled bits (+ bit ,(mod (+ first (* n +bits-per-word+)) n)) last-excl ,n))))
 
-;(macroexpand-1 '(doit 3))
+
+(defmacro cases ()
+  `(cond ,@(loop for x from 3 to 23 by 2
+                 collect `((= every-nth ,x)
+                          (doit ,(floor (expt x 2) 2) ,x)) into cases
+                 finally (return (append cases
+                                        `((t (set-bits-unrolled bits first-incl last-excl every-nth))))))))
 
 
 (defun set-bits-dense (bits first-incl last-excl every-nth)
   (declare (type nonneg-fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
-  (cond ((= every-nth 3)
-         (doit 4 3))
-
-        ((= every-nth 5)
-         (doit 12 5))
-
-        ((= every-nth 7)
-         (doit 24 7))
-
-        ((= every-nth 9)
-         (doit 40 9))
-
-        ((= every-nth 11)
-         (doit 60 11))
-
-        ((= every-nth 13)
-         (doit 84 13))
-
-        ((= every-nth 15)
-         (doit 112 15))
-
-        ((= every-nth 17)
-         (doit 144 17))
-
-        ((= every-nth 19)
-         (doit 180 19))
-
-        ((= every-nth 21)
-         (doit 220 21))
-
-        ((= every-nth 23)
-         (doit 264 23))
-
-        (t (set-bits-unrolled bits first-incl last-excl every-nth)))
-  nil)
+  (cases))
 
 
 (defun run-sieve (sieve-state)
