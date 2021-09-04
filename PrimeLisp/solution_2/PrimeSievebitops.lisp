@@ -195,7 +195,7 @@
     (set-bits-simple bits i last-excl every-nth)))
 
 
-(defmacro set-words (startword first n)
+(defmacro generate-set-bits-modulo (startword first n)
   (let ((startbit first))
     `(let* ((tmp 0)
             (startword ,startword))
@@ -219,22 +219,23 @@
                                                    (decf startbit +bits-per-word+))))))))
 
 
-(defmacro doit (first n)
+(defmacro generate-dense-loop (first n)
   `(progn
-     ;(set-words 0 ,first ,n)
+     ;(generate-set-bits-modulo 0 ,first ,n)  ; macro doesn't work for 60/11
      (set-bits-unrolled bits ,first ,(* n +bits-per-word+) ,n)
+
      (loop for bit of-type nonneg-fixnum
            from ,(* n +bits-per-word+)
            below (- last-excl ,(* n +bits-per-word+))
            by ,(* n +bits-per-word+)
-           do (set-words (floor bit +bits-per-word+) ,(mod (+ first (* n +bits-per-word+)) n) ,n)
+           do (generate-set-bits-modulo (floor bit +bits-per-word+) ,(mod (+ first (* n +bits-per-word+)) n) ,n)
            finally (set-bits-unrolled bits (+ bit ,(mod (+ first (* n +bits-per-word+)) n)) last-excl ,n))))
 
 
-(defmacro cases ()
+(defmacro generate-cases ()
   `(cond ,@(loop for x from 3 to 23 by 2
                  collect `((= every-nth ,x)
-                          (doit ,(floor (expt x 2) 2) ,x)) into cases
+                          (generate-dense-loop ,(floor (expt x 2) 2) ,x)) into cases
                  finally (return (append cases
                                         `((t (set-bits-unrolled bits first-incl last-excl every-nth))))))))
 
@@ -242,7 +243,7 @@
 (defun set-bits-dense (bits first-incl last-excl every-nth)
   (declare (type nonneg-fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
-  (cases))
+  (generate-cases))
 
 
 (defun run-sieve (sieve-state)
