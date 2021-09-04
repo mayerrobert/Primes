@@ -13,7 +13,7 @@
 
 (defun larger-of (size1 size2)
   (if (or (eq size1 :qword) (eq size2 :qword)) :qword :dword))
-
+#+nil
 ;;; "OR r, imm1" + "OR r, imm2" -> "OR r, (imm1 | imm2)"
 (defpattern "or + or -> or" ((or) (or)) (stmt next)
   (binding* (((size1 dst1 src1) (parse-2-operands stmt))
@@ -59,7 +59,7 @@
     ;(        127 . 31       )
     ;(        128 . 31       )
     ;(        129 . 31       )
-    (       1000 . 168      )
+    ;(       1000 . 168      )
     (      10000 . 1229     )
     (     100000 . 9592     )
     (    1000000 . 78498    )
@@ -209,7 +209,7 @@
                             collect `(setq tmp (logior tmp ,(ash 1 i))) into ret
                             finally (return (prog1 (append `((setq tmp (logior (aref bits (+ startword ,word)) ,(ash 1 startbit))))
                                                            ret
-                                                           (if (< i 64)
+                                                           (if (< i +bits-per-word+)
                                                                  `((setf (aref bits (+ startword ,word)) (logior tmp ,(ash 1 i))))
                                                              `((setf (aref bits (+ startword ,word)) tmp))))
                                                    ;(format t "word: ~d, startbit: ~d, i: ~d~%" word startbit i)
@@ -222,13 +222,13 @@
 
 (defmacro doit (first n)
   `(progn
-     (set-words 0 ,first ,n)
+     (set-words ,(floor first +bits-per-word+) ,(mod first +bits-per-word+) ,n)
      (loop for bit of-type nonneg-fixnum
            from ,(* n +bits-per-word+)
            below (- last-excl ,(* n +bits-per-word+))
            by ,(* n +bits-per-word+)
-           do (set-words (floor bit +bits-per-word+) ,(mod (+ first (* n 64)) n) ,n)
-           finally (set-bits-simple bits (+ bit ,(mod (+ first (* n 64)) n)) last-excl ,n)
+           do (set-words (floor bit +bits-per-word+) ,(mod (+ first (* n +bits-per-word+)) n) ,n)
+           finally (set-bits-simple bits (+ bit ,(mod (+ first (* n +bits-per-word+)) n)) last-excl ,n)
            )
      ))
 
@@ -248,11 +248,29 @@
         ((= every-nth 7)
          (doit 24 7))
 
-;        ((= every-nth 9)
-;         (doit 40 9))
+        ((= every-nth 9)
+         (doit 40 9))
 
 ;        ((= every-nth 11)
 ;         (doit 60 11))
+
+        ((= every-nth 13)
+         (doit 84 13))
+
+        ((= every-nth 15)
+         (doit 112 15))
+
+        ((= every-nth 17)
+         (doit 144 17))
+
+        ((= every-nth 19)
+         (doit 180 19))
+
+        ((= every-nth 21)
+         (doit 220 21))
+
+        ((= every-nth 23)
+         (doit 264 23))
 
         (t (set-bits-unrolled bits first-incl last-excl every-nth)))
   nil)
@@ -361,10 +379,10 @@ according to the historical data in +results+."
 
 
 #+nil
-(let* ((first 12)
-       (last 1000)
-       (asize (+ 4 (floor last 64)))
-       (n 5))
+(let* ((first 60)
+       (last 5000)
+       (asize (+ 4 (floor last +bits-per-word+)))
+       (n 11))
 
   (format t "simple:~%")
   (let* ((arry (make-array asize :element-type 'sieve-element-type :initial-element 0)))
@@ -377,4 +395,11 @@ according to the historical data in +results+."
   (let* ((arry (make-array asize :element-type 'sieve-element-type :initial-element 0)))
     (set-bits-dense arry first last n)
     (loop for i from 0 below asize
-          do (format t "~2,d: ~64,'0b~%" i (aref arry i)))))
+          do (format t "~2,d: ~64,'0b~%" i (aref arry i)))
+          
+    (loop for bit from first below last
+          do (let ((m (- bit first)))
+               (if (zerop (mod m n))
+                     (unless (nth-bit-set-p arry bit)
+                       (format t "bit ~d ist 0~%" bit)))))
+    ))
