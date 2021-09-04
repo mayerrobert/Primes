@@ -26,8 +26,8 @@
                (member size2 '(:dword :qword))
                (typep src2 '(signed-byte 32)))
       (setf (stmt-operands next)
-            `(,(larger-of size1 size2) ,dst2 ,(logior src1 src2))  ; 2.0.0
-            ;`(,(encode-size-prefix (larger-of size1 size2)) ,dst2 ,(logior src1 src2))  ; 2.1.7
+            ;`(,(larger-of size1 size2) ,dst2 ,(logior src1 src2))  ; 2.0.0
+            `(,(encode-size-prefix (larger-of size1 size2)) ,dst2 ,(logior src1 src2))  ; 2.1.7
             )
       (add-stmt-labels next (stmt-labels stmt))
       (delete-stmt stmt)
@@ -207,28 +207,31 @@
                ;do (format t "word: ~d, startbit: ~d~%" word startbit)
                append (loop for i from (+ startbit n) below (- +bits-per-word+ n) by n
                             collect `(setq tmp (logior tmp ,(ash 1 i))) into ret
-                            finally (return (prog1 (append `((setq tmp (logior (aref bits (+ startword ,word)) ,(ash 1 startbit))))
+                            finally (return (prog1 (append `((setq tmp
+                                                                   (logior (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
+                                                                           ,(ash 1 (mod startbit +bits-per-word+)))))
                                                            ret
-                                                           (if (< i +bits-per-word+)
-                                                                 `((setf (aref bits (+ startword ,word)) (logior tmp ,(ash 1 i))))
-                                                             `((setf (aref bits (+ startword ,word)) tmp))))
+                                                           `((setf (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
+                                                                   (logior tmp
+                                                                           ,(ash 1 (mod i +bits-per-word+))))))
                                                    ;(format t "word: ~d, startbit: ~d, i: ~d~%" word startbit i)
                                                    (setq startbit i)
                                                    (incf startbit n)
                                                    (decf startbit +bits-per-word+))))))))
 
-;(macroexpand-1 '(set-words 0 0 3))
+;(macroexpand-1 '(set-words 0 60 11))
 
 
 (defmacro doit (first n)
   `(progn
-     (set-words ,(floor first +bits-per-word+) ,(mod first +bits-per-word+) ,n)
+     ;(set-words 0 ,first ,n)
+     (set-bits-unrolled bits ,first ,(* n +bits-per-word+) ,n)
      (loop for bit of-type nonneg-fixnum
            from ,(* n +bits-per-word+)
            below (- last-excl ,(* n +bits-per-word+))
            by ,(* n +bits-per-word+)
            do (set-words (floor bit +bits-per-word+) ,(mod (+ first (* n +bits-per-word+)) n) ,n)
-           finally (set-bits-simple bits (+ bit ,(mod (+ first (* n +bits-per-word+)) n)) last-excl ,n)
+           finally (set-bits-unrolled bits (+ bit ,(mod (+ first (* n +bits-per-word+)) n)) last-excl ,n)
            )
      ))
 
@@ -239,7 +242,6 @@
   (declare (type nonneg-fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
   (cond ((= every-nth 3)
-         ;(format t "first = ~d. last = ~d, every = ~d~%" first-incl last-excl every-nth)
          (doit 4 3))
 
         ((= every-nth 5)
@@ -251,8 +253,8 @@
         ((= every-nth 9)
          (doit 40 9))
 
-;        ((= every-nth 11)
-;         (doit 60 11))
+        ((= every-nth 11)
+         (doit 60 11))
 
         ((= every-nth 13)
          (doit 84 13))
