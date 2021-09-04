@@ -1,11 +1,39 @@
 ;;;; based on sieve_1of2.c by  by Daniel Spangberg
 ;;;
+;;; set-bits-dense based on ; based on https://github.com/PlummersSoftwareLLC/Primes/pull/680
+;;;
 ;;; run as:
 ;;;     sbcl --script PrimeSievebitops.lisp
 ;;;
 
 
 ;(load "qwordvector.lisp")
+
+(in-package "SB-X86-64-ASM")
+
+(defun larger-of (size1 size2)
+  (if (or (eq size1 :qword) (eq size2 :qword)) :qword :dword))
+
+;;; "OR r, imm1" + "OR r, imm2" -> "OR r, (imm1 | imm2)"
+(defpattern "or + or -> or" ((or) (or)) (stmt next)
+  (binding* (((size1 dst1 src1) (parse-2-operands stmt))
+             ((size2 dst2 src2) (parse-2-operands next)))
+    ;(format t "defpattern or: size1 ~A, dst1 ~A, src1 ~A~%" size1 dst1 src1)
+    (when (and (gpr-tn-p dst1)
+               (location= dst2 dst1)
+               (member size1 '(:qword :dword))
+               (typep src1 '(signed-byte 32))
+               (member size2 '(:dword :qword))
+               (typep src2 '(signed-byte 32)))
+      (setf (stmt-operands next)
+            `(,(larger-of size1 size2) ,dst2 ,(logior src1 src2))  ; 2.0.0
+            ;`(,(encode-size-prefix (larger-of size1 size2)) ,dst2 ,(logior src1 src2))  ; 2.1.7
+            )
+      (add-stmt-labels next (stmt-labels stmt))
+      (delete-stmt stmt)
+      next)))
+
+(in-package "CL-USER")
 
 
 (declaim
@@ -17,7 +45,8 @@
   (inline set-nth-bit)
 
   (inline set-bits-simple)
-  (inline set-bits-unrolled))
+  (inline set-bits-unrolled)
+  (inline set-bits-dense))
 
 
 (defparameter *list-to* 100
@@ -67,7 +96,7 @@
   (declare (nonneg-fixnum maxints))
   (make-instance 'sieve-state
     :maxints maxints
-    :a (make-array (ceiling (ceiling maxints +bits-per-word+) 2)
+    :a (make-array (+ 1000 (ceiling (ceiling maxints +bits-per-word+) 2))
          :element-type 'sieve-element-type
          :initial-element 0)))
 
@@ -166,6 +195,66 @@
     (set-bits-simple bits i last-excl every-nth)))
 
 
+(defmacro set-words (startword first n)
+  (let ((startbit first))
+    `(let* ((tmp 0)
+            (startword ,startword)
+            )
+       (declare (type sieve-element-type tmp))
+       ,@(loop for word
+               from 0
+               below n
+               ;do (format t "word: ~d, startbit: ~d~%" word startbit)
+               append (loop for i from (+ startbit n) below (- +bits-per-word+ n) by n
+                            collect `(setq tmp (logior tmp ,(ash 1 i))) into ret
+                            finally (return (prog1 (append `((setq tmp (logior (aref bits (+ startword ,word)) ,(ash 1 startbit))))
+                                                           ret
+                                                           (if (< i 64)
+                                                                 `((setf (aref bits (+ startword ,word)) (logior tmp ,(ash 1 i))))
+                                                             `((setf (aref bits (+ startword ,word)) tmp))))
+                                                   ;(format t "word: ~d, startbit: ~d, i: ~d~%" word startbit i)
+                                                   (setq startbit i)
+                                                   (incf startbit n)
+                                                   (decf startbit +bits-per-word+))))))))
+
+;(macroexpand-1 '(set-words 0 0 3))
+
+
+(defmacro doit (first n)
+  `(progn
+     (set-words 0 ,first ,n)
+     (loop for bit of-type nonneg-fixnum
+           from ,(* n +bits-per-word+)
+           below last-excl
+           by ,(* n +bits-per-word+)
+           do (set-words (floor bit +bits-per-word+) ,(mod (+ first (* n 64)) n) ,n))))
+
+;(macroexpand-1 '(doit 3))
+
+
+(defun set-bits-dense (bits first-incl last-excl every-nth)
+  (declare (type nonneg-fixnum first-incl last-excl every-nth)
+           (type sieve-array-type bits))
+  (cond ((= every-nth 3)
+         ;(format t "first = ~d. last = ~d, every = ~d~%" first-incl last-excl every-nth)
+         (doit 4 3))
+
+        ((= every-nth 5)
+         (doit 12 5))
+
+        ((= every-nth 7)
+         (doit 24 7))
+
+;        ((= every-nth 9)
+;         (doit 40 9))
+
+;        ((= every-nth 11)
+;         (doit 60 11))
+
+        (t (set-bits-unrolled bits first-incl last-excl every-nth)))
+  nil)
+
+
 (defun run-sieve (sieve-state)
   (declare (type sieve-state sieve-state))
 
@@ -188,7 +277,7 @@
       (when (> factorh qh)
         (return-from run-sieve sieve-state))
 
-      (set-bits-unrolled rawbits (floor (the nonneg-fixnum (* factor factor)) 2) sieve-sizeh factor))
+      (set-bits-dense rawbits (floor (the nonneg-fixnum (* factor factor)) 2) sieve-sizeh factor))
     sieve-state))
 
 
@@ -240,6 +329,7 @@ according to the historical data in +results+."
     (if (and (test) hist (= (count-primes sieve-state) hist)) "yes" "no")))
 
 
+;#+nil
 (time
 (let* ((passes 0)
        (start (get-internal-real-time))
@@ -260,7 +350,28 @@ according to the historical data in +results+."
     (format t "mayerrobert-clb;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
 )
 
-(disassemble 'or-bit)
-(disassemble 'or-word)
-(disassemble 'set-nth-bit)
-(disassemble 'set-bits-unrolled)
+;(disassemble 'or-bit)
+;(disassemble 'or-word)
+;(disassemble 'set-nth-bit)
+;(disassemble 'set-bits-unrolled)
+;(disassemble 'set-bits-dense)
+
+
+#+nil
+(let* ((first 12)
+       (last 1000)
+       (asize (+ 4 (floor last 64)))
+       (n 5))
+
+  (format t "simple:~%")
+  (let* ((arry (make-array asize :element-type 'sieve-element-type :initial-element 0)))
+    (set-bits-simple arry first last n)
+    (loop for i from 0 below asize
+          do (format t "~2,d: ~64,'0b~%" i (aref arry i))))
+  
+  (format t "dense:~%")
+  ;#+nil
+  (let* ((arry (make-array asize :element-type 'sieve-element-type :initial-element 0)))
+    (set-bits-dense arry first last n)
+    (loop for i from 0 below asize
+          do (format t "~2,d: ~64,'0b~%" i (aref arry i)))))
