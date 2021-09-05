@@ -215,8 +215,8 @@
                                             (decf startbit +bits-per-word+))))))
 
 
-(defmacro generate-dense-loop (first n)
-  `(progn
+(defun generate-dense-loop (first n)
+  `(
      ;(generate-set-bits-modulo 0 ,first ,n)  ; macro doesn't work for 60/11
      (set-bits-unrolled bits ,first ,(* n +bits-per-word+) ,n)
 
@@ -230,21 +230,22 @@
            finally (set-bits-unrolled bits (+ bit ,(mod (+ first (* n +bits-per-word+)) n)) last-excl ,n))))
 
 
-; (macroexpand-1 '(generate-dense-loop 12 5))
-
-
-(defmacro generate-cases ()
+(defmacro generate-cond-stmt ()
   `(cond ,@(loop for x from 3 to 23 by 2
                  collect `((= every-nth ,x)
-                           (generate-dense-loop ,(floor (expt x 2) 2) ,x)) into cases
+                           ,@(generate-dense-loop (floor (expt x 2) 2) x)) into cases
                  finally (return (append cases
                                         `((t (set-bits-unrolled bits first-incl last-excl every-nth))))))))
+
+
+; uncomment the following line to display the generated cond stmt containing dense bit-setting loops for the first few distances
+(format *error-output* "Expansion of macro generate-cond-stmt:~%~A~%" (macroexpand-1 '(generate-cond-stmt)))
 
 
 (defun set-bits-dense (bits first-incl last-excl every-nth)
   (declare (type nonneg-fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
-  (generate-cases))
+  (generate-cond-stmt))
 
 
 (defun run-sieve (sieve-state)
