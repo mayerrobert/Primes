@@ -195,7 +195,7 @@
     (set-bits-simple bits i last-excl every-nth)))
 
 
-(defmacro generate-set-bits-modulo (startword startbit n)
+(defmacro generate-set-bits-modulo (startbit n)
   `(let* ()
      ,@(loop for word
              from 0
@@ -227,7 +227,7 @@
            below (- last-excl ,(* n +bits-per-word+))
            by ,(* n +bits-per-word+)
            do (let ((startword (floor bit +bits-per-word+)))
-                (generate-set-bits-modulo startword ,(mod (+ first (* n +bits-per-word+)) n) ,n))
+                (generate-set-bits-modulo ,(mod (+ first (* n +bits-per-word+)) n) ,n))
            finally (set-bits-unrolled bits (+ bit ,(mod (+ first (* n +bits-per-word+)) n)) last-excl ,n))))
 
 
