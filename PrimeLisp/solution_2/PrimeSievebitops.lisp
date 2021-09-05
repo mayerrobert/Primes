@@ -24,12 +24,12 @@
 
 
 (defconstant +results+
-  '(;(         10 . 4        )  ; dense loops write past the end of the array
-    ;(        100 . 25       )
-    ;(        127 . 31       )
-    ;(        128 . 31       )
-    ;(        129 . 31       )
-    ;(       1000 . 168      )
+  '((         10 . 4        )  ; dense loops write past the end of the array
+    (        100 . 25       )
+    (        127 . 31       )
+    (        128 . 31       )
+    (        129 . 31       )
+    (       1000 . 168      )
     (      10000 . 1229     )
     (     100000 . 9592     )
     (    1000000 . 78498    )
@@ -178,11 +178,13 @@ The generated code contains references to the variable ''last-excl'."
   "Expand into a cond stmt whose branches all set every 'every-nth' bit in the array 'bits'.
 The generated code contains references to the variables 'bits', 'first-incl', 'last-excl' and 'every-nth'.
 Branches for low values of 'every-nth' (up to 31) will set bits using unrolled dense loops, fallback for higher values is calling 'set-bits-unrolled'."
-  `(cond ,@(loop for x from 3 to 31 by 2
-                 collect `((= every-nth ,x)
-                           ,@(generate-dense-loop (floor (expt x 2) 2) x)) into cases
-                 finally (return (append cases
-                                        `((t (set-bits-unrolled bits first-incl last-excl every-nth))))))))
+  `(if (< every-nth (floor last-excl +bits-per-word+))
+         (cond ,@(loop for x from 3 to 31 by 2
+                       collect `((= every-nth ,x)
+                                 ,@(generate-dense-loop (floor (expt x 2) 2) x)) into cases
+                       finally (return (append cases
+                                              `((t (set-bits-unrolled bits first-incl last-excl every-nth)))))))
+     (set-bits-unrolled bits first-incl last-excl every-nth)))
 
 
 ; uncomment the following line to display the generated cond stmt containing dense bit-setting loops for the first few distances
