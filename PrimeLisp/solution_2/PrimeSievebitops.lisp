@@ -200,25 +200,31 @@
         from 0
         below n
         ;do (format t "word: ~d, startbit: ~d~%" word startbit)
-        append (loop for i from (+ startbit n) below (- +bits-per-word+ n) by n
-                     collect `(setq tmp (logior tmp ,(ash 1 i))) into ret
-                     finally (return (prog1 (append `((setq tmp
-                                                            (logior (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
-                                                                    ,(ash 1 (mod startbit +bits-per-word+)))))
-                                                    ret
-                                                    `((setf (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
-                                                            (logior tmp
-                                                                    ,(ash 1 (mod i +bits-per-word+))))))
-                                            ;(format t "word: ~d, startbit: ~d, i: ~d~%" word startbit i)
-                                            (setq startbit i)
-                                            (incf startbit n)
-                                            (decf startbit +bits-per-word+))))))
+        append (if (> (+ startbit n) +bits-per-word+)
+                     (prog1 `((setf (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
+                           (logior (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
+                                   ,(ash 1 (mod startbit +bits-per-word+)))))
+                       (incf startbit n)
+                       (decf startbit +bits-per-word+))
+                 (loop for i from (+ startbit n) below (- +bits-per-word+ n) by n
+                       collect `(setq tmp (logior tmp ,(ash 1 i))) into ret
+                       finally (return (prog1 (append `((setq tmp
+                                                              (logior (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
+                                                                      ,(ash 1 (mod startbit +bits-per-word+)))))
+                                                      ret
+                                                      `((setf (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
+                                                              (logior tmp
+                                                                      ,(ash 1 (mod i +bits-per-word+))))))
+                                              ;(format t "word: ~d, startbit: ~d, i: ~d~%" word startbit i)
+                                              (setq startbit i)
+                                              (incf startbit n)
+                                              (decf startbit +bits-per-word+)))))))
 
 
 (defun generate-dense-loop (first n)
   `(
-     ;(generate-set-bits-modulo 0 ,first ,n)  ; macro doesn't work for 60/11
-     (set-bits-unrolled bits ,first ,(* n +bits-per-word+) ,n)
+     (let ((startword 0) (tmp 0))
+       ,@(generate-set-bits-modulo first n))
 
      (loop with tmp of-type sieve-element-type
            for bit of-type nonneg-fixnum
