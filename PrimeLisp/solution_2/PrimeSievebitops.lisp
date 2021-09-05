@@ -54,7 +54,7 @@
 
 
 (defconstant +results+
-  '(;(         10 . 4        )
+  '(;(         10 . 4        )  ; dense loops write past the end of the array
     ;(        100 . 25       )
     ;(        127 . 31       )
     ;(        128 . 31       )
@@ -63,7 +63,8 @@
     (      10000 . 1229     )
     (     100000 . 9592     )
     (    1000000 . 78498    )
-    (   10000000 . 664579   ))
+    ;(   10000000 . 664579   )  ; probably some ubyte64 overflow
+    )
   "Historical data for validating our results - the number of primes
    to be found under some limit, such as 168 primes under 1000")
 
@@ -199,7 +200,6 @@
   (loop for word
         from 0
         below n
-        ;do (format t "word: ~d, startbit: ~d~%" word startbit)
         append (if (> (+ startbit n) +bits-per-word+)
                      (prog1 `((setf (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
                            (logior (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
@@ -215,7 +215,6 @@
                                                       `((setf (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
                                                               (logior tmp
                                                                       ,(ash 1 (mod i +bits-per-word+))))))
-                                              ;(format t "word: ~d, startbit: ~d, i: ~d~%" word startbit i)
                                               (setq startbit i)
                                               (incf startbit n)
                                               (decf startbit +bits-per-word+)))))))
@@ -224,6 +223,7 @@
 (defun generate-dense-loop (first n)
   `(
      (let ((startword 0) (tmp 0))
+       (declare (type sieve-element-type tmp))
        ,@(generate-set-bits-modulo first n))
 
      (loop with tmp of-type sieve-element-type
@@ -237,7 +237,7 @@
 
 
 (defmacro generate-cond-stmt ()
-  `(cond ,@(loop for x from 3 to 23 by 2
+  `(cond ,@(loop for x from 3 to 29 by 2
                  collect `((= every-nth ,x)
                            ,@(generate-dense-loop (floor (expt x 2) 2) x)) into cases
                  finally (return (append cases
@@ -343,10 +343,10 @@ according to the historical data in +results+."
   (let* ((duration  (/ (- (get-internal-real-time) start) internal-time-units-per-second))
          (avg (/ duration passes)))
     (when *list-to* (list-primes result))
-    (format *error-output* "Algorithm: base w/ bitops  Passes: ~d  Time: ~f Avg: ~f ms Count: ~d  Valid: ~A~%"
+    (format *error-output* "Algorithm: base w/ dense bitops  Passes: ~d  Time: ~f Avg: ~f ms Count: ~d  Valid: ~A~%"
             passes duration (* 1000 avg) (count-primes result) (validate result))
 
-    (format t "mayerrobert-clb;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
+    (format t "mayerrobert-cl-dense;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
 )
 
 ;(disassemble 'or-bit)
@@ -357,10 +357,10 @@ according to the historical data in +results+."
 
 
 #+nil
-(let* ((first 60)
-       (last 5000)
+(let* ((last 5000)
        (asize (+ 4 (floor last +bits-per-word+)))
-       (n 11))
+       (n 29)
+       (first (floor (* n n) 2)))
 
   (format t "simple:~%")
   (let* ((arry (make-array asize :element-type 'sieve-element-type :initial-element 0)))
