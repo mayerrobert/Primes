@@ -56,8 +56,8 @@
 
 
 (deftype number-t ()
-  ;`(integer 0 ,most-positive-fixnum))
-  `(unsigned-byte 64))
+  `(integer 0 ,most-positive-fixnum))
+  ;`(unsigned-byte 64))
 
 
 (defun run-sieve (sieve-state)

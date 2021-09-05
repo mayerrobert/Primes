@@ -24,7 +24,7 @@
 
 
 (defconstant +results+
-  '((         10 . 4        )  ; dense loops write past the end of the array
+  '((         10 . 4        )
     (        100 . 25       )
     (        127 . 31       )
     (        128 . 31       )
@@ -159,19 +159,18 @@ The generated code contains references to the variable 'startword'."
 (defun generate-dense-loop (first n)
   "Generate a loop statement to set every nth bit, starting at first.
 The generated code contains references to the variable ''last-excl'."
-  `(
-     (let ((startword 0) (tmp 0))
-       (declare (type sieve-element-type tmp))
-       ,@(generate-set-bits-modulo first n))
+  `((let ((startword 0) (tmp 0))
+      (declare (type sieve-element-type tmp))
+      ,@(generate-set-bits-modulo first n))
 
-     (loop with tmp of-type sieve-element-type
-           for bit of-type nonneg-fixnum
-           from ,(* n +bits-per-word+)
-           below (- last-excl ,(* n +bits-per-word+))
-           by ,(* n +bits-per-word+)
-           do (let ((startword (floor bit +bits-per-word+)))
-                ,@(generate-set-bits-modulo (mod (+ first (* n +bits-per-word+)) n) n))
-           finally (set-bits-unrolled bits (+ bit ,(mod (+ first (* n +bits-per-word+)) n)) last-excl ,n))))
+    (loop with tmp of-type sieve-element-type
+          for bit of-type nonneg-fixnum
+          from ,(* n +bits-per-word+)
+          below (- last-excl ,(* n +bits-per-word+))
+          by ,(* n +bits-per-word+)
+          do (let ((startword (floor bit +bits-per-word+)))
+               ,@(generate-set-bits-modulo (mod (+ first (* n +bits-per-word+)) n) n))
+          finally (set-bits-unrolled bits (+ bit ,(mod (+ first (* n +bits-per-word+)) n)) last-excl ,n))))
 
 
 (defmacro generate-cond-stmt ()

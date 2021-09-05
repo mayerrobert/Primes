@@ -268,5 +268,3 @@ according to the historical data in +results+."
             passes duration (* 1000 avg) (count-primes result) (validate result))
 
     (format t "mayerrobert-cl-words;~d;~f;1;algorithm=other,faithful=yes,bits=1~%" passes duration)))
-
-(disassemble 'set-bits)
