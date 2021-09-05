@@ -195,28 +195,25 @@
     (set-bits-simple bits i last-excl every-nth)))
 
 
-(defmacro generate-set-bits-modulo (startword first n)
-  (let ((startbit first))
-    `(let* ((tmp 0)
-            (startword ,startword))
-       (declare (type sieve-element-type tmp))
-       ,@(loop for word
-               from 0
-               below n
-               ;do (format t "word: ~d, startbit: ~d~%" word startbit)
-               append (loop for i from (+ startbit n) below (- +bits-per-word+ n) by n
-                            collect `(setq tmp (logior tmp ,(ash 1 i))) into ret
-                            finally (return (prog1 (append `((setq tmp
-                                                                   (logior (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
-                                                                           ,(ash 1 (mod startbit +bits-per-word+)))))
-                                                           ret
-                                                           `((setf (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
-                                                                   (logior tmp
-                                                                           ,(ash 1 (mod i +bits-per-word+))))))
-                                                   ;(format t "word: ~d, startbit: ~d, i: ~d~%" word startbit i)
-                                                   (setq startbit i)
-                                                   (incf startbit n)
-                                                   (decf startbit +bits-per-word+))))))))
+(defmacro generate-set-bits-modulo (startword startbit n)
+  `(let* ()
+     ,@(loop for word
+             from 0
+             below n
+             ;do (format t "word: ~d, startbit: ~d~%" word startbit)
+             append (loop for i from (+ startbit n) below (- +bits-per-word+ n) by n
+                          collect `(setq tmp (logior tmp ,(ash 1 i))) into ret
+                          finally (return (prog1 (append `((setq tmp
+                                                                 (logior (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
+                                                                         ,(ash 1 (mod startbit +bits-per-word+)))))
+                                                         ret
+                                                         `((setf (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
+                                                                 (logior tmp
+                                                                         ,(ash 1 (mod i +bits-per-word+))))))
+                                                 ;(format t "word: ~d, startbit: ~d, i: ~d~%" word startbit i)
+                                                 (setq startbit i)
+                                                 (incf startbit n)
+                                                 (decf startbit +bits-per-word+)))))))
 
 
 (defmacro generate-dense-loop (first n)
@@ -224,18 +221,24 @@
      ;(generate-set-bits-modulo 0 ,first ,n)  ; macro doesn't work for 60/11
      (set-bits-unrolled bits ,first ,(* n +bits-per-word+) ,n)
 
-     (loop for bit of-type nonneg-fixnum
+     (loop with tmp of-type sieve-element-type
+           for bit of-type nonneg-fixnum
            from ,(* n +bits-per-word+)
            below (- last-excl ,(* n +bits-per-word+))
            by ,(* n +bits-per-word+)
-           do (generate-set-bits-modulo (floor bit +bits-per-word+) ,(mod (+ first (* n +bits-per-word+)) n) ,n)
+           do (let ((startword (floor bit +bits-per-word+)))
+                (generate-set-bits-modulo startword ,(mod (+ first (* n +bits-per-word+)) n) ,n))
            finally (set-bits-unrolled bits (+ bit ,(mod (+ first (* n +bits-per-word+)) n)) last-excl ,n))))
+
+
+; (macroexpand-1 '(generate-dense-loop 12 5))
+; (macroexpand-1 '(generate-set-bits-modulo 5 2 5))
 
 
 (defmacro generate-cases ()
   `(cond ,@(loop for x from 3 to 23 by 2
                  collect `((= every-nth ,x)
-                          (generate-dense-loop ,(floor (expt x 2) 2) ,x)) into cases
+                           (generate-dense-loop ,(floor (expt x 2) 2) ,x)) into cases
                  finally (return (append cases
                                         `((t (set-bits-unrolled bits first-incl last-excl every-nth))))))))
 
