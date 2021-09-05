@@ -1,6 +1,6 @@
 ;;;; loosely based on sieve_1of2.c by  by Daniel Spangberg
 ;;;
-;;; set-bits-dense based on ; based on https://github.com/PlummersSoftwareLLC/Primes/pull/680
+;;; set-bits-dense based on https://github.com/PlummersSoftwareLLC/Primes/pull/680
 ;;;
 ;;; run as:
 ;;;     sbcl --script PrimeSievebitops.lisp
@@ -237,7 +237,7 @@
 
 
 (defmacro generate-cond-stmt ()
-  `(cond ,@(loop for x from 3 to 29 by 2
+  `(cond ,@(loop for x from 3 to 31 by 2
                  collect `((= every-nth ,x)
                            ,@(generate-dense-loop (floor (expt x 2) 2) x)) into cases
                  finally (return (append cases
@@ -329,7 +329,6 @@ according to the historical data in +results+."
 
 
 ;#+nil
-(time
 (let* ((passes 0)
        (start (get-internal-real-time))
        (end (+ start (* internal-time-units-per-second 5)))
@@ -347,7 +346,6 @@ according to the historical data in +results+."
             passes duration (* 1000 avg) (count-primes result) (validate result))
 
     (format t "mayerrobert-cl-dense;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
-)
 
 ;(disassemble 'or-bit)
 ;(disassemble 'or-word)
