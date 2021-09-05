@@ -1,4 +1,4 @@
-;;;; based on sieve_1of2.c by  by Daniel Spangberg
+;;;; loosely based on sieve_1of2.c by  by Daniel Spangberg
 ;;;
 ;;; set-bits-dense based on ; based on https://github.com/PlummersSoftwareLLC/Primes/pull/680
 ;;;
@@ -239,7 +239,7 @@
 
 
 ; uncomment the following line to display the generated cond stmt containing dense bit-setting loops for the first few distances
-(format *error-output* "Expansion of macro generate-cond-stmt:~%~A~%" (macroexpand-1 '(generate-cond-stmt)))
+;(format *error-output* "Expansion of macro generate-cond-stmt:~%~A~%" (macroexpand-1 '(generate-cond-stmt)))
 
 
 (defun set-bits-dense (bits first-incl last-excl every-nth)
