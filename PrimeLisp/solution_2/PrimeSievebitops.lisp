@@ -195,25 +195,24 @@
     (set-bits-simple bits i last-excl every-nth)))
 
 
-(defmacro generate-set-bits-modulo (startbit n)
-  `(let* ()
-     ,@(loop for word
-             from 0
-             below n
-             ;do (format t "word: ~d, startbit: ~d~%" word startbit)
-             append (loop for i from (+ startbit n) below (- +bits-per-word+ n) by n
-                          collect `(setq tmp (logior tmp ,(ash 1 i))) into ret
-                          finally (return (prog1 (append `((setq tmp
-                                                                 (logior (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
-                                                                         ,(ash 1 (mod startbit +bits-per-word+)))))
-                                                         ret
-                                                         `((setf (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
-                                                                 (logior tmp
-                                                                         ,(ash 1 (mod i +bits-per-word+))))))
-                                                 ;(format t "word: ~d, startbit: ~d, i: ~d~%" word startbit i)
-                                                 (setq startbit i)
-                                                 (incf startbit n)
-                                                 (decf startbit +bits-per-word+)))))))
+(defun generate-set-bits-modulo (startbit n)
+  (loop for word
+        from 0
+        below n
+        ;do (format t "word: ~d, startbit: ~d~%" word startbit)
+        append (loop for i from (+ startbit n) below (- +bits-per-word+ n) by n
+                     collect `(setq tmp (logior tmp ,(ash 1 i))) into ret
+                     finally (return (prog1 (append `((setq tmp
+                                                            (logior (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
+                                                                    ,(ash 1 (mod startbit +bits-per-word+)))))
+                                                    ret
+                                                    `((setf (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
+                                                            (logior tmp
+                                                                    ,(ash 1 (mod i +bits-per-word+))))))
+                                            ;(format t "word: ~d, startbit: ~d, i: ~d~%" word startbit i)
+                                            (setq startbit i)
+                                            (incf startbit n)
+                                            (decf startbit +bits-per-word+))))))
 
 
 (defmacro generate-dense-loop (first n)
@@ -227,12 +226,11 @@
            below (- last-excl ,(* n +bits-per-word+))
            by ,(* n +bits-per-word+)
            do (let ((startword (floor bit +bits-per-word+)))
-                (generate-set-bits-modulo ,(mod (+ first (* n +bits-per-word+)) n) ,n))
+                ,@(generate-set-bits-modulo (mod (+ first (* n +bits-per-word+)) n) n))
            finally (set-bits-unrolled bits (+ bit ,(mod (+ first (* n +bits-per-word+)) n)) last-excl ,n))))
 
 
 ; (macroexpand-1 '(generate-dense-loop 12 5))
-; (macroexpand-1 '(generate-set-bits-modulo 5 2 5))
 
 
 (defmacro generate-cases ()
