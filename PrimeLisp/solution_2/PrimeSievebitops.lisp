@@ -137,23 +137,24 @@ The generated code contains references to the variable 'startword'."
         from 0
         below n
         append (if (> (+ startbit n) +bits-per-word+)
+
                      (prog1 `((setf (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
                            (logior (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
                                    ,(ash 1 (mod startbit +bits-per-word+)))))
                        (incf startbit n)
                        (decf startbit +bits-per-word+))
-                 (loop for i from (+ startbit n) below (- +bits-per-word+ n) by n
-                       collect `(setq tmp (logior tmp ,(ash 1 i))) into ret
-                       finally (return (prog1 (append `((setq tmp
-                                                              (logior (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
-                                                                      ,(ash 1 (mod startbit +bits-per-word+)))))
-                                                      ret
-                                                      `((setf (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
-                                                              (logior tmp
-                                                                      ,(ash 1 (mod i +bits-per-word+))))))
-                                              (setq startbit i)
-                                              (incf startbit n)
-                                              (decf startbit +bits-per-word+)))))))
+
+                 (append `((setq tmp (logior (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
+                                             ,(ash 1 (mod startbit +bits-per-word+)))))
+                         (loop for i from (+ startbit n) below (- +bits-per-word+ n) by n
+                               collect `(setq tmp (logior tmp ,(ash 1 i))) into ret
+                               finally (return (prog1 (append ret
+                                                              `((setf (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
+                                                                      (logior tmp
+                                                                              ,(ash 1 (mod i +bits-per-word+))))))
+                                                      (setq startbit i)
+                                                      (incf startbit n)
+                                                      (decf startbit +bits-per-word+))))))))
 
 
 (defun generate-dense-loop (first n)

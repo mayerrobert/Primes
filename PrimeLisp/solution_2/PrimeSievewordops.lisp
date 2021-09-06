@@ -151,7 +151,7 @@ E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
           (loop with tmp of-type fixnum
                 for num of-type fixnum
                 from (1+ (floor first-incl +bits-per-word+))
-                to (1- (floor last-excl +bits-per-word+))
+                below (floor last-excl +bits-per-word+)
                 do
                   (when (>= (setq total (+ total shift)) every-nth)
                     (setq total (- total every-nth)))
@@ -171,7 +171,7 @@ E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
 
     (loop for num of-type fixnum
           from first-incl
-          to (1- last-excl)
+          below last-excl
           by every-nth
           do
       (set-nth-bit bits num))))

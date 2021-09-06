@@ -6,11 +6,8 @@
 
 
 #+(and :sbcl :x86-64)
-(progn
-  (when (equalp "2.0.0" (lisp-implementation-version))
-    (load "bitvector-set-2.0.0-2.1.8-snap.lisp")) ; teach sbcl 2.0.0 the new bitvector-set from sbcl 2.1.8
-  (when (equalp "2.1.7" (lisp-implementation-version))
-    (load "bitvector-set-2.1.7-2.1.8-snap.lisp")))  ; teach sbcl 2.1.7 the new bitvector-set from sbcl 2.1.8
+(when (equalp "2.0.0" (lisp-implementation-version))
+  (load "bitvector-set-2.0.0-2.1.8-snap.lisp")) ; teach sbcl 2.0.0 the new bitvector-set from sbcl 2.1.8
 
 
 (declaim
@@ -36,9 +33,14 @@
    to be found under some limit, such as 168 primes under 1000")
 
 
+(deftype number-t ()
+  `(integer 0 ,most-positive-fixnum))
+  ;`(unsigned-byte 64))
+
+
 (defclass sieve-state ()
   ((maxints :initarg :maxints
-            :type fixnum
+            :type number-t
             :accessor sieve-state-maxints)
 
    (a       :initarg :a
@@ -47,17 +49,12 @@
 
 
 (defun create-sieve (maxints)
-  (declare (fixnum maxints))
+  (declare (type number-t maxints))
   (make-instance 'sieve-state
     :maxints maxints
     :a (make-array (ceiling maxints 2)
          :element-type 'bit
          :initial-element 0)))
-
-
-(deftype number-t ()
-  `(integer 0 ,most-positive-fixnum))
-  ;`(unsigned-byte 64))
 
 
 (defun run-sieve (sieve-state)
@@ -140,7 +137,7 @@ according to the historical data in +results+."
        (start (get-internal-real-time))
        (end (+ start (* internal-time-units-per-second 5)))
        result)
-  (declare (fixnum passes))
+  (declare (number-t passes))
 
   (loop while (<= (get-internal-real-time) end)
         do (setq result (run-sieve (create-sieve 1000000)))
@@ -161,7 +158,7 @@ according to the historical data in +results+."
        (start (get-internal-real-time))
        (end (+ start (* internal-time-units-per-second 5)))
        result)
-  (declare (fixnum passes))
+  (declare (number-t passes))
 
   (loop while (<= (get-internal-real-time) end)
         do (setq result #. (run-sieve (create-sieve 1000000)))
@@ -174,5 +171,3 @@ according to the historical data in +results+."
             passes duration (* 1000 avg) (count-primes result) (validate result))
 
     (format t "mayerrobert-cl-hashdot;~d;~f;1;algorithm=base,faithful=no,bits=1~%" passes duration)))
-
-;(disassemble 'run-sieve)
