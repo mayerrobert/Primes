@@ -134,7 +134,7 @@
   (intern (format nil "~A~A" s1 s2)))
 
 
-(defmacro generate-x-y-loop (startmod skipmod)
+(defun generate-x-y-loop (startmod skipmod)
   `(progn
      (loop ,@(loop for n from 0 below +bits-per-word+
                    append `(with ,(sym "C" n) of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* ,n every-nth)))) +bits-per-word+)))
@@ -157,7 +157,11 @@
   `(ecase (the nonneg-fixnum (+ startmod (ash skipmod 2)))
      ,@(loop for x from 0 to (- +bits-per-word+ 2) by 2 ; actually this could be 4
              append (loop for y from 1 below +bits-per-word+ by 2
-                          collect `(,(+ x (ash y 2)) (generate-x-y-loop ,x ,y))))))
+                          collect `(,(+ x (ash y 2)) ,(generate-x-y-loop x y))))))
+
+
+; uncomment the following line to display the generated ecase stmt containing bit-setting loops
+;(format *error-output* "Expansion of macro generate-ecase:~%~A~%" (macroexpand-1 '(generate-ecase)))
 
 
 (defun set-bits (bits first-incl last-excl every-nth)
@@ -176,7 +180,6 @@
                 (skipmod (mod every-nth +bits-per-word+))
                 (bulkendword (floor (the nonneg-fixnum (- last-excl (the nonneg-fixnum (* +bits-per-word+ every-nth)))) +bits-per-word+)))
             (declare (nonneg-fixnum startmod skipmod bulkendword))
-            ;(format t "startmod ~d, skipmod ~d, skip ~d, last-excl - first-incl ~d, bits to set ~d~%" startmod skipmod every-nth #1=(- last-excl first-incl) (floor #1# every-nth))
 
             (generate-ecase))
 
