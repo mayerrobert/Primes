@@ -7,6 +7,34 @@
 ;;;
 
 
+(in-package "SB-X86-64-ASM")
+
+
+#+(and :sbcl :x86-64)
+(when (member (lisp-implementation-version) '("2.0.0" "2.1.8") :test #'equalp)
+  ;;; "OR r, imm1" + "OR r, imm2" -> "OR r, (imm1 | imm2)"
+  (defpattern "or + or -> or" ((or) (or)) (stmt next)
+    (binding* (((size1 dst1 src1) (parse-2-operands stmt))
+               ((size2 dst2 src2) (parse-2-operands next)))
+      (labels ((larger-of (size1 size2)
+                 (if (or (eq size1 :qword) (eq size2 :qword)) :qword :dword)))
+        (when (and (gpr-tn-p dst1)
+                   (location= dst2 dst1)
+                   (member size1 '(:qword :dword))
+                   (typep src1 '(signed-byte 32))
+                   (member size2 '(:dword :qword))
+                   (typep src2 '(signed-byte 32)))
+          (setf (stmt-operands next)
+                (if (equalp "2.0.0" (lisp-implementation-version))
+                      `(,(larger-of size1 size2) ,dst2 ,(logior src1 src2))  ; 2.0.0
+                  `(,(encode-size-prefix (larger-of size1 size2)) ,dst2 ,(logior src1 src2))))  ; 2.1.7
+          (add-stmt-labels next (stmt-labels stmt))
+          (delete-stmt stmt)
+          next)))))
+
+(in-package "CL-USER")
+
+
 (declaim
   (optimize (speed 3) (safety 0) (debug 0) (space 0))
 
@@ -181,9 +209,8 @@ Branches for low values of 'every-nth' (up to 31) will set bits using unrolled d
   `(if (< every-nth (floor last-excl +bits-per-word+))
          (cond ,@(loop for x from 3 to 31 by 2
                        collect `((= every-nth ,x)
-                                 ,@(generate-dense-loop (floor (expt x 2) 2) x)) into cases
-                       finally (return (append cases
-                                              `((t (set-bits-unrolled bits first-incl last-excl every-nth)))))))
+                                 ,@(generate-dense-loop (floor (expt x 2) 2) x)))
+               (t (set-bits-unrolled bits first-incl last-excl every-nth)))
      (set-bits-unrolled bits first-incl last-excl every-nth)))
 
 
