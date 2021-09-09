@@ -147,14 +147,6 @@
          finally (setq first-incl (+ ,startmod (the nonneg-fixnum (* word +bits-per-word+))))))
 
 
-(defun generate-x-y-f (startmod skipmod)
-  `(lambda (bits first-incl last-excl every-nth bulkstartword bulkendword)
-     (declare (type nonneg-fixnum first-incl last-excl every-nth bulkstartword bulkendword)
-              (type sieve-array-type bits))
-     ,(generate-x-y-loop startmod skipmod)
-     (set-bits-simple bits first-incl last-excl every-nth)))
-
-
 (defun make-index (startmod skipmod)
   (+ (floor startmod 2) (ash (floor skipmod 2) 5)))
 
@@ -163,12 +155,16 @@
   (loop for x from 0 below +bits-per-word+ by 2 ; actually this could be 4
         append (loop for y from 1 below +bits-per-word+ by 2
                      collect `(setf (aref funcs ,(make-index x y))
-                                    ,(generate-x-y-f x y)))))
+                                    (lambda (bits first-incl last-excl every-nth bulkstartword bulkendword)
+                                      (declare (type nonneg-fixnum first-incl last-excl every-nth bulkstartword bulkendword)
+                                               (type sieve-array-type bits))
+                                      ,(generate-x-y-loop x y)
+                                      (set-bits-simple bits first-incl last-excl every-nth))))))
 
 
 (defconstant +functions+ (let ((funcs (make-array 2048 :initial-element nil)))
-                       #.`(progn ,@(generate-functions))
-                       funcs))
+                           #.`(progn ,@(generate-functions))
+                           funcs))
 
 
 (defun set-bits (bits first-incl last-excl every-nth)
