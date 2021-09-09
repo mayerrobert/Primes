@@ -5,7 +5,7 @@
 ;;;
 
 
-#+(and :sbcl :x86-64)
+#+(and nil :sbcl :x86-64)
 (progn
   (when (equalp "2.0.0" (lisp-implementation-version))
     (load "peephole-2.0.0.lisp"))
@@ -135,18 +135,15 @@
 
 
 (defun generate-x-y-loop (startmod skipmod)
-  `(progn
-     (loop ,@(loop for n from 0 below +bits-per-word+
-                   append `(with ,(sym "C" n) of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* ,n every-nth)))) +bits-per-word+)))
-           for word of-type nonneg-fixnum
-           from bulkstartword
-           below bulkendword
-           by every-nth
-           do ,@(loop for n from 0 below +bits-per-word+
-                      collect `(or-word bits (+ word ,(sym "C" n)) ,(ash 1 (mod (+ startmod (* n skipmod)) +bits-per-word+))))
-           finally (setq first-incl (+ ,startmod (the nonneg-fixnum (* word +bits-per-word+)))))
-
-     (set-bits-simple bits first-incl last-excl every-nth)))
+  `(loop ,@(loop for n from 0 below +bits-per-word+
+               append `(,(if (zerop n) 'with 'and) ,(sym "C" n) of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* ,n every-nth)))) +bits-per-word+)))
+         for word of-type nonneg-fixnum
+         from bulkstartword
+         below bulkendword
+         by every-nth
+         do ,@(loop for n from 0 below +bits-per-word+
+                    collect `(or-word bits (+ word ,(sym "C" n)) ,(ash 1 (mod (+ startmod (* n skipmod)) +bits-per-word+))))
+         finally (setq first-incl (+ ,startmod (the nonneg-fixnum (* word +bits-per-word+))))))
 
 
 (defmacro generate-ecase ()
@@ -157,11 +154,9 @@
   `(ecase (the nonneg-fixnum (+ startmod (ash skipmod 2)))
      ,@(loop for x from 0 to (- +bits-per-word+ 2) by 2 ; actually this could be 4
              append (loop for y from 1 below +bits-per-word+ by 2
-                          collect `(,(+ x (ash y 2)) ,(generate-x-y-loop x y))))))
-
-
-; uncomment the following line to display the generated ecase stmt containing bit-setting loops
-;(format *error-output* "Expansion of macro generate-ecase:~%~A~%" (macroexpand-1 '(generate-ecase)))
+                          collect `(,(+ x (ash y 2))
+                                    ,(generate-x-y-loop x y)
+                                    (set-bits-simple bits first-incl last-excl every-nth))))))
 
 
 (defun set-bits (bits first-incl last-excl every-nth)
@@ -279,3 +274,11 @@ according to the historical data in +results+."
             passes duration (* 1000 avg) (count-primes result) (validate result))
 
     (format t "mayerrobert-cl-modulo;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
+
+
+; uncomment the following line to display the generated loop stmt for setting every 3rd bit starting at 4
+;(format *error-output* "The bit-setting loop for startmod=4 and skipmod=3:~%~A~%" (generate-x-y-loop 4 3))
+
+
+; uncomment the following line to display the generated ecase stmt containing bit-setting loops
+;(format *error-output* "Expansion of macro generate-ecase:~%~A~%" (macroexpand-1 '(generate-ecase)))
