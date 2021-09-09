@@ -136,7 +136,7 @@
 
 (defun generate-x-y-loop (startmod skipmod)
   `(loop ,@(loop for n from 0 below +bits-per-word+
-               append `(,(if (zerop n) 'with 'and) ,(sym "C" n) of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* ,n every-nth)))) +bits-per-word+)))
+                 append `(,(if (zerop n) 'with 'and) ,(sym "C" n) of-type nonneg-fixnum = (floor (the nonneg-fixnum (+ ,startmod (the nonneg-fixnum (* ,n every-nth)))) +bits-per-word+)))
          for word of-type nonneg-fixnum
          from bulkstartword
          below bulkendword
@@ -152,7 +152,7 @@
   ; if the ecase keys are small (and maybe dense?) fixnums then SBCL will compile the ecase into a jump table
   ; doesn't make a big difference, tough: most of the time is spent in the bit-setting loops
   `(ecase (the nonneg-fixnum (+ startmod (ash skipmod 2)))
-     ,@(loop for x from 0 to (- +bits-per-word+ 2) by 2 ; actually this could be 4
+     ,@(loop for x from 0 below +bits-per-word+ by 2 ; actually this could be 4
              append (loop for y from 1 below +bits-per-word+ by 2
                           collect `(,(+ x (ash y 2))
                                     ,(generate-x-y-loop x y)
