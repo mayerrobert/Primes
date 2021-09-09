@@ -20,9 +20,9 @@
   (inline nth-bit-set-p)
   (inline set-nth-bit)
 
-  ;(inline make-index)
+  (inline make-index)
   (inline set-bits-simple)
-  ;(inline set-bits-unrolled)
+  (inline set-bits-unrolled)
   (inline set-bits))
 
 
@@ -149,30 +149,26 @@
 
 (defun generate-x-y-f (startmod skipmod)
   `(lambda (bits first-incl last-excl every-nth bulkstartword bulkendword)
-    (declare (type nonneg-fixnum first-incl last-excl every-nth bulkstartword bulkendword)
+     (declare (type nonneg-fixnum first-incl last-excl every-nth bulkstartword bulkendword)
               (type sieve-array-type bits))
-    ;(format t "in      startmod ~d, skipmod ~d, first ~d, last ~d, every ~d~%" ,startmod ,skipmod first-incl last-excl every-nth)
-    ,(generate-x-y-loop startmod skipmod)
-    (set-bits-simple bits first-incl last-excl every-nth)))
-
-
-(defconstant *funcs* (make-array 2048 :initial-element nil))
+     ,(generate-x-y-loop startmod skipmod)
+     (set-bits-simple bits first-incl last-excl every-nth)))
 
 
 (defun make-index (startmod skipmod)
   (+ (floor startmod 2) (ash (floor skipmod 2) 5)))
 
 
-(defun set-funcs ()
-(loop for x from 0 below +bits-per-word+ by 4 ; actually this could be 4
-      append (loop for y from 1 below +bits-per-word+ by 2
-               append `((setf (aref *funcs* ,(make-index x y))
-                              ,(generate-x-y-f x y))))))
+(defun generate-functions ()
+  (loop for x from 0 below +bits-per-word+ by 2 ; actually this could be 4
+        append (loop for y from 1 below +bits-per-word+ by 2
+                     collect `(setf (aref funcs ,(make-index x y))
+                                    ,(generate-x-y-f x y)))))
 
-;(format *error-output* "************ Expansion of macro generate-ecase:~%~A~%***********************~%" `(progn ,@(set-funcs)))
 
-#.`(progn ,@(set-funcs))
-(disassemble (aref *funcs* (make-index 4 3)))
+(defconstant +functions+ (let ((funcs (make-array 2048 :initial-element nil)))
+                       #.`(progn ,@(generate-functions))
+                       funcs))
 
 
 (defun set-bits (bits first-incl last-excl every-nth)
@@ -182,7 +178,7 @@
 
   (let* ((bulkstartword (floor first-incl +bits-per-word+))
          (bulkstart     (* bulkstartword +bits-per-word+))
-         (funcs *funcs*))
+         (funcs +functions+))
     (declare (nonneg-fixnum bulkstartword bulkstart)
              (type (simple-array (function (sieve-array-type nonneg-fixnum nonneg-fixnum nonneg-fixnum nonneg-fixnum nonneg-fixnum)
                                            sieve-element-type) 1) funcs))
@@ -292,6 +288,16 @@ according to the historical data in +results+."
     (format *error-output* "Algorithm: base w/ modulo functions  Passes: ~d  Time: ~f Avg: ~f ms Count: ~d  Valid: ~A~%"
             passes duration (* 1000 avg) (count-primes result) (validate result))
 
-    (format t "mayerrobert-cl-modulo-f;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
+    (format t "mayerrobert-cl-modulo-functions;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
 
-(disassemble 'set-bits)
+
+; uncomment the following line to display the generated loop stmt for setting every 3rd bit starting at 4
+;(format *error-output* "The bit-setting loop for startmod=4 and skipmod=3:~%~A~%" (generate-x-y-loop 4 3))
+
+
+; uncomment the following line to display the statements that assign lambda forms to the vector of functions
+;(format *error-output* "Filling of the +functions+ vector with lambda forms:~%~A~%" `(progn ,@(generate-functions)))
+
+
+;(disassemble (aref +functions+ (make-index 4 3)))
+;(disassemble 'set-bits)

@@ -280,5 +280,5 @@ according to the historical data in +results+."
 ;(format *error-output* "The bit-setting loop for startmod=4 and skipmod=3:~%~A~%" (generate-x-y-loop 4 3))
 
 
-; uncomment the following line to display the generated ecase stmt containing bit-setting loops
+; uncomment the following line to display the generated ecase stmt containing all bit-setting loops
 ;(format *error-output* "Expansion of macro generate-ecase:~%~A~%" (macroexpand-1 '(generate-ecase)))
