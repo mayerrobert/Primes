@@ -95,6 +95,7 @@
   "Set n-th bit in array a to 1."
   (declare (type sieve-array-type a)
            (type nonneg-fixnum n))
+  ;(when (nth-bit-set-p a n) (format t "setting bit ~d that is already set~%" n))
   (multiple-value-bind (q r) (floor n +bits-per-word+)
     (declare (nonneg-fixnum q r))
     (or-word a q (expt 2 r)))
@@ -148,7 +149,7 @@
 
 
 (defun make-index (startmod skipmod)
-  (+ (floor startmod 2) (ash (floor skipmod 2) 5)))
+  (+ (floor startmod 2) (ash (floor skipmod 2) 2)))
 
 
 (defun generate-functions ()
@@ -173,11 +174,8 @@
            (type sieve-array-type bits))
 
   (let* ((bulkstartword (floor first-incl +bits-per-word+))
-         (bulkstart     (* bulkstartword +bits-per-word+))
-         (funcs +functions+))
-    (declare (nonneg-fixnum bulkstartword bulkstart)
-             (type (simple-array (function (sieve-array-type nonneg-fixnum nonneg-fixnum nonneg-fixnum nonneg-fixnum nonneg-fixnum)
-                                           sieve-element-type) 1) funcs))
+         (bulkstart     (* bulkstartword +bits-per-word+)))
+    (declare (nonneg-fixnum bulkstartword bulkstart))
 
     (if (and (> last-excl (the nonneg-fixnum (* +bits-per-word+ every-nth)))
              (< bulkstart last-excl))
@@ -187,7 +185,7 @@
                 (bulkendword (floor (the nonneg-fixnum (- last-excl (the nonneg-fixnum (* +bits-per-word+ every-nth)))) +bits-per-word+)))
             (declare (nonneg-fixnum startmod skipmod bulkendword))
 
-            (funcall (aref funcs (make-index startmod skipmod)) bits first-incl last-excl every-nth bulkstartword bulkendword))
+            (funcall (aref +functions+ (make-index startmod skipmod)) bits first-incl last-excl every-nth bulkstartword bulkendword))
 
       (set-bits-unrolled bits first-incl last-excl every-nth))))
 

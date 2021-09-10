@@ -20,6 +20,7 @@
   (inline nth-bit-set-p)
   (inline set-nth-bit)
 
+  (inline make-index)
   (inline set-bits-simple)
   (inline set-bits-unrolled)
   (inline set-bits))
@@ -94,6 +95,7 @@
   "Set n-th bit in array a to 1."
   (declare (type sieve-array-type a)
            (type nonneg-fixnum n))
+  ;(when (nth-bit-set-p a n) (format t "setting bit ~d that is already set~%" n))
   (multiple-value-bind (q r) (floor n +bits-per-word+)
     (declare (nonneg-fixnum q r))
     (or-word a q (expt 2 r)))
@@ -146,15 +148,19 @@
          finally (setq first-incl (+ ,startmod (the nonneg-fixnum (* word +bits-per-word+))))))
 
 
+(defun make-index (startmod skipmod)
+  (+ (floor startmod 2) (ash (floor skipmod 2) 2)))
+
+
 (defmacro generate-ecase ()
   ; first-incl is even, every-nth is odd, see comment in run-sieve below.
   ; therefore only a few combinations can happen: startmod [0 2 4 6] and skipmod [1 3 5 7]
   ; if the ecase keys are small (and maybe dense?) fixnums then SBCL will compile the ecase into a jump table
   ; doesn't make a big difference, tough: most of the time is spent in the bit-setting loops
-  `(ecase (the nonneg-fixnum (+ startmod (ash skipmod 2)))
+  `(ecase (the nonneg-fixnum (make-index startmod skipmod))
      ,@(loop for x from 0 below +bits-per-word+ by 2 ; actually this could be 4
              append (loop for y from 1 below +bits-per-word+ by 2
-                          collect `(,(+ x (ash y 2))
+                          collect `(,(make-index x y)
                                     ,(generate-x-y-loop x y)
                                     (set-bits-simple bits first-incl last-excl every-nth))))))
 

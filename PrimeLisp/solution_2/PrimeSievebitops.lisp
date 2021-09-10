@@ -120,6 +120,7 @@
   "Set n-th bit in array a to 1."
   (declare (type sieve-array-type a)
            (type nonneg-fixnum n))
+  ;(when (nth-bit-set-p a n) (format t "setting bit ~d that is already set~%" n))
   (multiple-value-bind (q r) (floor n +bits-per-word+)
     (declare (nonneg-fixnum q r))
     (or-bit a q r)))
