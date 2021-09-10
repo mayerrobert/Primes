@@ -93,7 +93,7 @@
                    do (setf (sbit rawbits i) 1)
                       (incf i factor)))
 
-    (incf factor 2))
+           (incf factor 2))
   sieve-state)
 
 
