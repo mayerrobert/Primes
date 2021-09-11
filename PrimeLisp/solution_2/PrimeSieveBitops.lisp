@@ -314,5 +314,9 @@ according to the historical data in +results+."
     (format t "mayerrobert-cl-dense;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
 
 
+; uncomment the following line to display the generated loop stmt for setting every 3rd bit starting at 4
+;(format *error-output* "The bit-setting loop for startmod=4 and skipmod=3:~%~A~%" (generate-dense-loop 4 3))
+
+
 ; uncomment the following line to display the generated cond stmt containing dense bit-setting loops for the first few distances
 ;(format *error-output* "Expansion of macro generate-cond-stmt:~%~A~%" (macroexpand-1 '(generate-cond-stmt)))
