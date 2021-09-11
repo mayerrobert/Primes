@@ -5,14 +5,6 @@
 ;;;
 
 
-#+(and nil :sbcl :x86-64)
-(progn
-  (when (equalp "2.0.0" (lisp-implementation-version))
-    (load "peephole-2.0.0.lisp"))
-  (when (equalp "2.1.7" (lisp-implementation-version))
-    (load "peephole-2.1.7.lisp")))
-
-
 (declaim
   (optimize (speed 3) (safety 0) (debug 0) (space 0))
 
