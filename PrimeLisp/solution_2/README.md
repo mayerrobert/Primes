@@ -75,7 +75,7 @@ with unrolled loops a vector of functions is used where each function contains t
 These functions are generated and assigned to the vector by the function `generate-functions`.
 The generated functions and assignments to the vector will be printed to the screen after uncommenting line 284.
 
-Unfortunately sbcl currently is not smart enough to make full use of all optimization opportunities
+Unfortunately sbcl misses some optimization opportunities
 of `PrimeSieveModulo.lisp` and `PrimeSieveModuloFuncs.lisp` so that the performance is not as good as I was hoping.
 
 ---
@@ -101,9 +101,6 @@ into the word-array.
 
 All: The state of the sieve is stored in a Lisp class.
 
-
-Re: optimizations; (compile-file "PrimeSieveWheel.lisp") will show lots of info during the compilation
-regarding inefficient code that can't be optimized.
 
 ## Run instructions
 
