@@ -63,13 +63,13 @@ For Common Lisp bit ops see https://lispcookbook.github.io/cl-cookbook/numbers.h
 as explained in https://github.com/PlummersSoftwareLLC/Primes/pull/641 .
 The macro `generate-ecase` expands into an ecase form that contains specialized bit-setting-loops
 for all combinations of start%8 and skip%8.
-The generated ecase form will be printed to the screen after uncommenting line 282.
+The generated ecase form will be printed to the screen after uncommenting line 281.
 
 
 `PrimeSieveModuloFuncs.lisp` is similar to `PrimeSieveModulo.lisp` except instead of an ecase form
 with unrolled loops a vector of functions is used where each function contains the unrolled loop.
 These functions are generated and assigned to the vector by the function `generate-functions`.
-The generated functions and assignments to the vector will be printed to the screen after uncommenting line 285.
+The generated functions and assignments to the vector will be printed to the screen after uncommenting line 284.
 
 Unfortunately sbcl currently is not smart enough to make full use of all optimization opportunities
 of `PrimeSieveModulo.lisp` and `PrimeSieveModuloFuncs.lisp` so that the performance is not as good as I was hoping.

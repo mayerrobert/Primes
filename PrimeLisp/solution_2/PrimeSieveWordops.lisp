@@ -73,12 +73,7 @@
 
 
 (defmacro shl64 (x bits)
-  ;;;`(the sieve-element-type (ash ,x (the sieve-bitpos-type ,bits))))
   `(ldb (byte 64 0) (ash ,x (the sieve-bitpos-type ,bits))))
-
-  ;`(ash ,x (the sieve-bitpos-type ,bits)))
-  ;`(the (integer 0 #. #xFFFFFFFFFFFFFFFF) (ash ,x (the sieve-bitpos-type ,bits))))
-  ;`(logand #xFFFFFFFFFFFFFFFF (the sieve-element-type (ash ,x (the sieve-bitpos-type ,bits)))))
 
 
 (defun nth-bit-set-p (a n)
