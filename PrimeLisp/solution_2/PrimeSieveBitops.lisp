@@ -120,7 +120,6 @@
   "Set n-th bit in array a to 1."
   (declare (type sieve-array-type a)
            (type nonneg-fixnum n))
-  ;(when (nth-bit-set-p a n) (format t "setting bit ~d that is already set~%" n))
   (multiple-value-bind (q r) (floor n +bits-per-word+)
     (declare (nonneg-fixnum q r))
     (or-bit a q r)))
@@ -188,7 +187,7 @@ The generated code contains references to the variable 'startword'."
 
 (defun generate-dense-loop (first n)
   "Generate a loop statement to set every nth bit, starting at first.
-The generated code contains references to the variable ''last-excl'."
+The generated code contains references to the variable 'last-excl'."
   `((let ((startword 0) (tmp 0))
       (declare (type sieve-element-type tmp))
       ,@(generate-set-bits-modulo first n))
@@ -213,10 +212,6 @@ Branches for low values of 'every-nth' (up to 31) will set bits using unrolled d
                                  ,@(generate-dense-loop (floor (expt x 2) 2) x)))
                (t (set-bits-unrolled bits first-incl last-excl every-nth)))
      (set-bits-unrolled bits first-incl last-excl every-nth)))
-
-
-; uncomment the following line to display the generated cond stmt containing dense bit-setting loops for the first few distances
-;(format *error-output* "Expansion of macro generate-cond-stmt:~%~A~%" (macroexpand-1 '(generate-cond-stmt)))
 
 
 (defun set-bits-dense (bits first-incl last-excl every-nth)
@@ -317,3 +312,7 @@ according to the historical data in +results+."
             passes duration (* 1000 avg) (count-primes result) (validate result))
 
     (format t "mayerrobert-cl-dense;~d;~f;1;algorithm=base,faithful=yes,bits=1~%" passes duration)))
+
+
+; uncomment the following line to display the generated cond stmt containing dense bit-setting loops for the first few distances
+;(format *error-output* "Expansion of macro generate-cond-stmt:~%~A~%" (macroexpand-1 '(generate-cond-stmt)))
