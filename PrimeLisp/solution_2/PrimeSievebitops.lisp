@@ -3,7 +3,7 @@
 ;;; set-bits-dense based on https://github.com/PlummersSoftwareLLC/Primes/pull/680
 ;;;
 ;;; run as:
-;;;     sbcl --script PrimeSieveBitops.lisp
+;;;     sbcl --script PrimeSievebitops.lisp
 ;;;
 
 

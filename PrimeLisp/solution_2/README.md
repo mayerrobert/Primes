@@ -47,19 +47,21 @@ and the result of this evaluation will replace the original form.
 So, to summarize: `mayerrobert-cl-hashdot` does not use compile-time evaluation,
 the evaluation happens *before* compile-time.
 
+---
 
-`PrimeSieveBitops.lisp` doesn't use a bit vector but a machine word array and some bit operations to get and set bits.
+`PrimeSievebitops.lisp` doesn't use a bit vector but a machine word array and some bit operations to get and set bits.
 Algorithm is base with 0 for primes.
 
 It uses dense bit setting loops based on the ideas in https://github.com/PlummersSoftwareLLC/Primes/pull/680 .
 The generated cond form that contains the dense bit-setting-loops for low factors
 will be printed to the screen after uncommenting line 321.
 
-PrimeSieveBitops.lisp also amends sbcl's peephole optimizer with a pattern that combines successive `OR` instructions
+`PrimeSievebitops.lisp` also amends sbcl's peephole optimizer with a pattern that combines successive `OR` instructions
 with the same target register and immediate source operands of size signed-byte-32 or smaller.
 
 For Common Lisp bit ops see https://lispcookbook.github.io/cl-cookbook/numbers.html#bit-wise-operation
 
+---
 
 `PrimeSieveModulo.lisp` (I think) uses the extreme loop unrolling method
 as explained in https://github.com/PlummersSoftwareLLC/Primes/pull/641 .
@@ -76,23 +78,26 @@ The generated functions and assignments to the vector will be printed to the scr
 Unfortunately sbcl currently is not smart enough to make full use of all optimization opportunities
 of `PrimeSieveModulo.lisp` and `PrimeSieveModuloFuncs.lisp` so that the performance is not as good as I was hoping.
 
+---
 
 `PrimeSieveWheelOpt.lisp` is a Common Lisp port of sieve_5760of30030_only_write_read_bits.c
 by Daniel Spangberg.
 
 Algorithm is _wheel_, see PrimeC/solution_2/README.md for a better explanation than I would be able to give.
 
-PrimeSieveWheelOpt.lisp stores bits in an array of `(unsigned-byte 64)`,
+`PrimeSieveWheelOpt.lisp` stores bits in an array of `(unsigned-byte 64)`,
 much like Daniel's code uses an array of `uint64_t` when compiled with `-DCOMPILE_64_BIT`.
 
 
 `PrimeSieveWheelBitvector.lisp` is pretty much the same as `PrimeSieveWheelOpt.lisp`
 expect it uses a builtin bitvector instead on manual bit-fiddling.
 
+---
 
-`PrimeSieveWordops.lisp` sets multiple bits at a time by copying bitpatterns (that are shifted and masked appropriately)
+`PrimeSievewordops.lisp` sets multiple bits at a time by copying bitpatterns (that are shifted and masked appropriately)
 into the word-array.
 
+---
 
 All: The state of the sieve is stored in a Lisp class.
 
@@ -153,6 +158,7 @@ Using the provided dockerfile with podman on Fedora33, Pentium(R) Dual Core T430
     mayerrobert-cl-wheel-opt;6217;5.000177;1;algorithm=wheel,faithful=yes,bits=1
     mayerrobert-cl-words;4779;5.000183;1;algorithm=other,faithful=yes,bits=1
 
+---
 
 Using sbcl 2.1.8 on Windows 10, 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz (max turbo frequency 4.2 GHz) I get
 
