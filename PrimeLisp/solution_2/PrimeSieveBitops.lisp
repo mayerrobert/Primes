@@ -3,7 +3,7 @@
 ;;; set-bits-dense based on https://github.com/PlummersSoftwareLLC/Primes/pull/680
 ;;;
 ;;; run as:
-;;;     sbcl --script PrimeSievebitops.lisp
+;;;     sbcl --script PrimeSieveBitops.lisp
 ;;;
 
 
@@ -27,7 +27,7 @@
           (setf (stmt-operands next)
                 (if (equalp "2.0.0" (lisp-implementation-version))
                       `(,(larger-of size1 size2) ,dst2 ,(logior src1 src2))  ; 2.0.0
-                  `(,(encode-size-prefix (larger-of size1 size2)) ,dst2 ,(logior src1 src2))))  ; 2.1.7
+                  `(,(encode-size-prefix (larger-of size1 size2)) ,dst2 ,(logior src1 src2))))  ; 2.1.8
           (add-stmt-labels next (stmt-labels stmt))
           (delete-stmt stmt)
           next)))))

@@ -1,7 +1,7 @@
 ;;;; based on https://github.com/PlummersSoftwareLLC/Primes/pull/641
 ;;;
 ;;; run as:
-;;;     sbcl --script PrimeSievemodulo.lisp
+;;;     sbcl --script PrimeSieveModuloFuncs.lisp
 ;;;
 
 
