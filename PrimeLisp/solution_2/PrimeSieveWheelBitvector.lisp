@@ -320,7 +320,6 @@
             (i (floor (the nonneg-fixnum (* factor factor)) 2)))
            ((>= i maxintsh))
         (declare (nonneg-fixnum istep ninc factor i))
-        ;(unless (zerop (sbit a i)) (format t "setting bit ~d that is already set~%" i))
         (setf (sbit a i) 1)
         (incf i (the nonneg-fixnum (* factor ninc)))))
 
