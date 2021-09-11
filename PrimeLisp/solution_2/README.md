@@ -52,6 +52,8 @@ the evaluation happens *before* compile-time.
 Algorithm is base with 0 for primes.
 
 It uses dense bit setting loops based on the ideas in https://github.com/PlummersSoftwareLLC/Primes/pull/680 .
+The generated cond form that contains the dense bit-setting-loops for low factors
+will be printed to the screen after uncommenting line 321.
 
 PrimeSieveBitops.lisp also amends sbcl's peephole optimizer with a pattern that combines successive `OR` instructions
 with the same target register and immediate source operands of size signed-byte-32 or smaller.

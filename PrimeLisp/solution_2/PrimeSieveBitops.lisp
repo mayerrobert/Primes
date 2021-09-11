@@ -9,7 +9,6 @@
 
 (in-package "SB-X86-64-ASM")
 
-
 #+(and :sbcl :x86-64)
 (when (member (lisp-implementation-version) '("2.0.0" "2.1.8") :test #'equalp)
   ;;; "OR r, imm1" + "OR r, imm2" -> "OR r, (imm1 | imm2)"
