@@ -8,7 +8,6 @@
 (declaim
   (optimize (speed 3) (safety 0) (debug 0) (space 0))
 
-  (inline shl)
   (inline nth-bit-set-p)
   (inline set-nth-bit)
   (inline set-bits))
@@ -65,14 +64,7 @@
          :initial-element 0)))
 
 
-(defun shl (x bits)
-  "Compute bitwise left shift of x by 'bits' bits, represented on 'width' bits"
-  (declare (type sieve-element-type x) (type sieve-bitpos-type bits))
-  (logand (ash x bits)
-          (1- (ash 1 +bits-per-word+))))
-
-
-(defmacro shl64 (x bits)
+(defmacro shl (x bits)
   `(ldb (byte 64 0) (ash ,x (the sieve-bitpos-type ,bits))))
 
 
@@ -125,20 +117,20 @@ E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
            (type sieve-array-type bits))
   (if (<= every-nth 32)
 
-        (let ((pattern0 (aref +patterns+ every-nth))
+        (let ((pattern (aref +patterns+ every-nth))
               (shift 0)
               (total 0))
-          (declare (type sieve-element-type pattern0) (fixnum shift total))
+          (declare (type sieve-element-type pattern) (fixnum shift total))
 
           ; set first word and prepare shift amounts
           (multiple-value-bind (q r) (floor first-incl +bits-per-word+)
             (when (< last-excl +bits-per-word+)
               (setf (aref bits q) (logior (aref bits q)
-                                          (logand (shl64 pattern0 r)
+                                          (logand (shl pattern r)
                                                   (1- (ash 1 (the sieve-bitpos-type last-excl))))))
               (return-from set-bits nil))
 
-            (setf (aref bits q) (logior (aref bits q) (shl64 pattern0 r)))
+            (setf (aref bits q) (logior (aref bits q) (shl pattern r)))
             (setq total (mod r every-nth))
             (setq shift (- every-nth (mod +bits-per-word+ every-nth))))
 
@@ -151,8 +143,7 @@ E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
                   (when (>= (setq total (+ total shift)) every-nth)
                     (setq total (- total every-nth)))
 
-                  (setf (aref bits num) (logior (aref bits num) (shl64 pattern0 total)))
-                  ;(setf (aref bits num) (logior (aref bits num) (ldb (byte 64 0) (ash pattern0 (the sieve-bitpos-type total)))))
+                  (setf (aref bits num) (logior (aref bits num) (shl pattern total)))
 
                 finally ; set last word
                   (setq tmp (- last-excl (* num +bits-per-word+)))
@@ -161,7 +152,7 @@ E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
                       (setq total (- total every-nth)))
 
                     (setf (aref bits num) (logior (aref bits num)
-                                                  (logand (shl64 pattern0 total)
+                                                  (logand (shl pattern total)
                                                           (1- (ash 1 (the sieve-bitpos-type tmp)))))))))
 
     (loop for num of-type fixnum
