@@ -283,7 +283,3 @@ according to the historical data in +results+."
 
 ; uncomment the following line to display the statements that assign lambda forms to the vector of functions
 ;(format *error-output* "Filling of the +functions+ vector with lambda forms:~%~A~%" `(progn ,@(generate-functions)))
-
-
-;(disassemble (aref +functions+ (make-index 4 3)))
-;(disassemble 'set-bits)
