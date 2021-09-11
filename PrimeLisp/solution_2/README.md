@@ -104,8 +104,8 @@ First install "Steel Bank Common Lisp", see http://www.sbcl.org/platform-table.h
 
 Windows users may instead want to go to https://github.com/sbcl/sbcl -> Actions -> Windows
 and enter e.g. `branch:sbcl-2.1.7` into the "Filter workflow runs" textfield.
-This will lead you to https://github.com/sbcl/sbcl/actions/runs/1082323609.
-From there you can download a Windows installer for SBCL 2.1.7.
+This will lead you to https://github.com/sbcl/sbcl/actions/runs/1182434888.
+From there you can download a Windows installer for SBCL 2.1.8.
 
 Other Common Lisps should work as well ("Armed Bear Common Lisp" was lightly tested).
 
@@ -142,13 +142,14 @@ Using the provided dockerfile with podman on Fedora33, Pentium(R) Dual Core T430
 
     $ podman build -t lisp2 .
     $ podman run --rm lisp2 2> /dev/null
-    mayerrobert-cl;3388;5.000176;1;algorithm=base,faithful=yes,bits=1
-    mayerrobert-cl-hashdot;174503774;5.000176;1;algorithm=base,faithful=no,bits=1
-    mayerrobert-cl-wheel;5716;5.000177;1;algorithm=wheel,faithful=yes,bits=1
-    mayerrobert-cl-wheel-bitvector;7171;5.000176;1;algorithm=wheel,faithful=yes,bits=1
-    mayerrobert-cl-wheel-opt;6213;5.000177;1;algorithm=wheel,faithful=yes,bits=1
-    mayerrobert-clb;2373;5.001176;1;algorithm=base,faithful=yes,bits=1
-    mayerrobert-cl-words;4236;5.000176;1;algorithm=base,faithful=no,bits=1
+    mayerrobert-cl;3399;5.000176;1;algorithm=base,faithful=yes,bits=1
+    mayerrobert-cl-hashdot;176592210;5.000176;1;algorithm=base,faithful=no,bits=1
+    mayerrobert-cl-dense;5662;5.000177;1;algorithm=base,faithful=yes,bits=1
+    mayerrobert-cl-modulo;2884;5.001176;1;algorithm=base,faithful=yes,bits=1
+    mayerrobert-cl-modulo-functions;3204;5.000177;1;algorithm=base,faithful=yes,bits=1
+    mayerrobert-cl-wheel-bitvector;7173;5.000176;1;algorithm=wheel,faithful=yes,bits=1
+    mayerrobert-cl-wheel-opt;6217;5.000177;1;algorithm=wheel,faithful=yes,bits=1
+    mayerrobert-cl-words;4779;5.000183;1;algorithm=other,faithful=yes,bits=1
 
 
 Using sbcl 2.1.8 on Windows 10, 11th Gen Intel(R) Core(TM) i5-1135G7 @ 2.40GHz (max turbo frequency 4.2 GHz) I get
