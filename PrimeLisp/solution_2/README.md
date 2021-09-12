@@ -54,7 +54,7 @@ Algorithm is base with 0 for primes.
 
 It uses dense bit setting loops based on the ideas in https://github.com/PlummersSoftwareLLC/Primes/pull/680 .
 The generated cond form that contains the dense bit-setting-loops for low factors
-will be printed to the screen after uncommenting line 321.
+will be printed to the screen after uncommenting the last line.
 
 `PrimeSievebitops.lisp` also amends sbcl's peephole optimizer with a pattern that combines successive `OR` instructions
 with the same target register and immediate source operands of size signed-byte-32 or smaller.
@@ -67,13 +67,13 @@ For Common Lisp bit ops see https://lispcookbook.github.io/cl-cookbook/numbers.h
 as explained in https://github.com/PlummersSoftwareLLC/Primes/pull/641 .
 The macro `generate-ecase` expands into an ecase form that contains specialized bit-setting-loops
 for all combinations of start%8 and skip%8.
-The generated ecase form will be printed to the screen after uncommenting line 281.
+The generated ecase form will be printed to the screen after uncommenting the last line.
 
 
 `PrimeSieveModuloFuncs.lisp` is similar to `PrimeSieveModulo.lisp` except instead of an ecase form
 with unrolled loops a vector of functions is used where each function contains the unrolled loop.
 These functions are generated and assigned to the vector by the function `generate-functions`.
-The generated functions and assignments to the vector will be printed to the screen after uncommenting line 284.
+The generated functions and assignments to the vector will be printed to the screen after uncommenting the last line.
 
 Unfortunately sbcl misses some optimization opportunities
 of `PrimeSieveModulo.lisp` and `PrimeSieveModuloFuncs.lisp` so that the performance is not as good as I was hoping.
