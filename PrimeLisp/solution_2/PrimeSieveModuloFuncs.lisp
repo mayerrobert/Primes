@@ -134,8 +134,8 @@
          from bulkstartword
          below bulkendword
          by every-nth
-         do ,@(loop for n from 0 below +bits-per-word+
-                    collect `(or-word bits (+ word ,(sym "C" n)) ,(ash 1 (mod (+ startmod (* n skipmod)) +bits-per-word+))))
+         do (progn ,@(loop for n from 0 below +bits-per-word+
+                    collect `(or-word bits (+ word ,(sym "C" n)) ,(ash 1 (mod (+ startmod (* n skipmod)) +bits-per-word+)))))
          finally (setq first-incl (+ ,startmod (the nonneg-fixnum (* word +bits-per-word+))))))
 
 
@@ -144,8 +144,8 @@
 
 
 (defun generate-functions ()
-  (loop for x from 0 below +bits-per-word+ by 2 ; actually this could be 4
-        append (loop for y from 1 below +bits-per-word+ by 2
+  (loop for y from 1 below +bits-per-word+ by 2
+        append (loop for x from 0 below +bits-per-word+ by 2 ; actually this could be 4
                      collect `(setf (aref funcs ,(make-index x y))
                                     (lambda (bits first-incl last-excl every-nth bulkstartword bulkendword)
                                       (declare (type nonneg-fixnum first-incl last-excl every-nth bulkstartword bulkendword)
@@ -154,7 +154,7 @@
                                       (set-bits-simple bits first-incl last-excl every-nth))))))
 
 
-(defconstant +functions+ (let ((funcs (make-array 2048 :initial-element nil)))
+(defconstant +functions+ (let ((funcs (make-array 16 :initial-element nil)))
                            #.`(progn ,@(generate-functions))
                            funcs))
 

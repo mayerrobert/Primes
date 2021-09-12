@@ -134,8 +134,8 @@
          from bulkstartword
          below bulkendword
          by every-nth
-         do ,@(loop for n from 0 below +bits-per-word+
-                    collect `(or-word bits (+ word ,(sym "C" n)) ,(ash 1 (mod (+ startmod (* n skipmod)) +bits-per-word+))))
+         do (progn ,@(loop for n from 0 below +bits-per-word+
+                    collect `(or-word bits (+ word ,(sym "C" n)) ,(ash 1 (mod (+ startmod (* n skipmod)) +bits-per-word+)))))
          finally (setq first-incl (+ ,startmod (the nonneg-fixnum (* word +bits-per-word+))))))
 
 
@@ -147,10 +147,9 @@
   ; first-incl is even, every-nth is odd, see comment in run-sieve below.
   ; therefore only a few combinations can happen: startmod [0 2 4 6] and skipmod [1 3 5 7]
   ; if the ecase keys are small (and maybe dense?) fixnums then SBCL will compile the ecase into a jump table
-  ; doesn't make a big difference, tough: most of the time is spent in the bit-setting loops
   `(ecase (the nonneg-fixnum (make-index startmod skipmod))
-     ,@(loop for x from 0 below +bits-per-word+ by 2 ; actually this could be 4
-             append (loop for y from 1 below +bits-per-word+ by 2
+     ,@(loop for y from 1 below +bits-per-word+ by 2
+             append (loop for x from 0 below +bits-per-word+ by 2 ; actually this could be 4
                           collect `(,(make-index x y)
                                     ,(generate-x-y-loop x y)
                                     (set-bits-simple bits first-incl last-excl every-nth))))))
