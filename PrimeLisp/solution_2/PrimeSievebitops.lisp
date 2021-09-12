@@ -168,7 +168,7 @@ The generated code contains references to the variable 'startword'."
                             (decf startbit +bits-per-word+))
 
                  `((let ((tmp (logior (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
-                                             ,(ash 1 (mod startbit +bits-per-word+)))))
+                                      ,(ash 1 (mod startbit +bits-per-word+)))))
                     (declare (type sieve-element-type tmp))
 
                     ,@(loop for i from (+ startbit n) below (- +bits-per-word+ n) by n
