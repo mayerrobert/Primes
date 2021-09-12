@@ -10,6 +10,7 @@
 (in-package "SB-X86-64-ASM")
 
 #+(and :sbcl :x86-64)
+(eval-when (:load-toplevel :compile-toplevel :execute)
 (when (member (lisp-implementation-version) '("2.0.0" "2.1.8") :test #'equalp)
   ;;; "OR r, imm1" + "OR r, imm2" -> "OR r, (imm1 | imm2)"
   (defpattern "or + or -> or" ((or) (or)) (stmt next)
@@ -30,6 +31,7 @@
           (add-stmt-labels next (stmt-labels stmt))
           (delete-stmt stmt)
           next)))))
+)
 
 (in-package "CL-USER")
 
@@ -150,6 +152,7 @@
     (set-bits-simple bits i last-excl every-nth)))
 
 
+(eval-when (:load-toplevel :compile-toplevel :execute)
 (defun generate-set-bits-modulo (startbit n)
   "Generate statements to set every nth bit in n words, starting at startbit.
 The generated code contains references to the variable 'startword'."
@@ -185,14 +188,14 @@ The generated code contains references to the variable 'last-excl'."
   `((let ((startword 0))
       ,@(generate-set-bits-modulo first n))
 
-    (loop with tmp of-type sieve-element-type
-          for bit of-type nonneg-fixnum
+    (loop for bit of-type nonneg-fixnum
           from ,(* n +bits-per-word+)
           below (- last-excl ,(* n +bits-per-word+))
           by ,(* n +bits-per-word+)
           do (let ((startword (floor bit +bits-per-word+)))
                ,@(generate-set-bits-modulo (mod (+ first (* n +bits-per-word+)) n) n))
           finally (set-bits-unrolled bits (+ bit ,(mod (+ first (* n +bits-per-word+)) n)) last-excl ,n))))
+)
 
 
 (defmacro generate-cond-stmt ()
@@ -236,8 +239,7 @@ Branches for low values of 'every-nth' (up to 31) will set bits using unrolled d
       (when (> factorh qh)
         (return-from run-sieve sieve-state))
 
-      (set-bits-dense rawbits (floor (the nonneg-fixnum (* factor factor)) 2) sieve-sizeh factor))
-    sieve-state))
+      (set-bits-dense rawbits (floor (the nonneg-fixnum (* factor factor)) 2) sieve-sizeh factor))))
 
 
 (defun count-primes (sieve-state)
