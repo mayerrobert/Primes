@@ -37,7 +37,6 @@
 (declaim
   (optimize (speed 3) (safety 0) (debug 0) (space 0))
 
-  (inline or-bit)
   (inline nth-bit-set-p)
   (inline set-nth-bit)
 
@@ -108,20 +107,13 @@
     (logbitp r (aref a q))))
 
 
-(defun or-bit (a idx bit)
-  "Set bit in array a at the given word-index and bit-position to 1."
-  (let ((pattern (ash 1 bit)))
-    (declare (type sieve-element-type pattern))
-    (setf #1=(aref a idx) (logior #1# pattern))))
-
-
 (defun set-nth-bit (a n)
   "Set n-th bit in array a to 1."
   (declare (type sieve-array-type a)
            (type nonneg-fixnum n))
   (multiple-value-bind (q r) (floor n +bits-per-word+)
     (declare (nonneg-fixnum q r))
-    (or-bit a q r)))
+    (setf #1=(aref a q) (logior #1# (ash 1 r)))))
 
 
 (defun set-bits-simple (bits first-incl last-excl every-nth)
