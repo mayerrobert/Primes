@@ -113,7 +113,8 @@
            (type nonneg-fixnum n))
   (multiple-value-bind (q r) (floor n +bits-per-word+)
     (declare (nonneg-fixnum q r))
-    (setf #1=(aref a q) (logior #1# (ash 1 r)))))
+    (setf #1=(aref a q)
+             (logior #1# (ash 1 r)))))
 
 
 (defun set-bits-simple (bits first-incl last-excl every-nth)
