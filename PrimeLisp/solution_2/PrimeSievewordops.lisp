@@ -86,7 +86,8 @@
          (logior #1# (expt 2 r)))) 0)
 
 
-(defun patterns ()
+(eval-when (:load-toplevel :compile-toplevel :execute)
+(defun generate-patterns ()
   "Create a vector of bit-patterns."
   (labels ((pattern (n)
              "Return a bit pattern where every n-th bit is 1, starting from least significant bit."
@@ -104,9 +105,10 @@
             to 32
             do (setf (aref res x) (pattern x)))
       res)))
+)
 
 
-(defconstant +patterns+ (coerce (patterns) '(simple-array sieve-element-type 1))
+(defconstant +patterns+ (coerce (generate-patterns) '(simple-array sieve-element-type 1))
   "A vector of bit pattern where every n-th bit is 1, starting from least significant bit.
 E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
 
@@ -171,7 +173,7 @@ E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
          (sieve-sizeh (ceiling sieve-size 2))
          (factor 0)
          (factorh 1)
-         (qh (ceiling (floor (sqrt sieve-size)) 2)))
+         (qh (ceiling (isqrt sieve-size) 2)))
     (declare (fixnum sieve-size sieve-sizeh factor factorh qh) (type sieve-array-type rawbits))
     (loop do
 
@@ -185,8 +187,7 @@ E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
       (when (> factorh qh)
         (return-from run-sieve sieve-state))
 
-      (set-bits rawbits (floor (the fixnum (* factor factor)) 2) sieve-sizeh factor))
-    sieve-state))
+      (set-bits rawbits (floor (the fixnum (* factor factor)) 2) sieve-sizeh factor))))
 
 
 (defun count-primes (sieve-state)
