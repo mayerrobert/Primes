@@ -116,7 +116,8 @@
   (multiple-value-bind (q r) (floor n +bits-per-word+)
     (declare (nonneg-fixnum q r))
     (setf #1=(aref a q)
-             (logior #1# (ash 1 r)))))
+             (logior #1# (ash 1 r))))
+  0)
 
 
 (defun set-bits-simple (bits first-incl last-excl every-nth)
@@ -225,7 +226,7 @@ Branches for low values of 'every-nth' (up to 31) will set bits using unrolled d
          (sieve-sizeh (ceiling sieve-size 2))
          (factor 0)
          (factorh 1)
-         (qh (ceiling (floor (sqrt sieve-size)) 2)))
+         (qh (ceiling (isqrt sieve-size) 2)))
     (declare (nonneg-fixnum sieve-size sieve-sizeh factor factorh qh) (type sieve-array-type rawbits))
     (loop do
 
