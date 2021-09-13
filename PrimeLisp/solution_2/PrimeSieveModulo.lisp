@@ -80,6 +80,9 @@
 
 
 (defun or-word (a idx pattern)
+  (declare (type sieve-array-type a)
+           (type nonneg-fixnum idx)
+           (type sieve-element-type pattern))
   (setf #1=(aref a idx) (logior #1# pattern)))
 
 
@@ -123,6 +126,7 @@
     (set-bits-simple bits i last-excl every-nth)))
 
 
+(eval-when (:load-toplevel :compile-toplevel :execute)
 (defun sym (s1 s2)
   (intern (format nil "~A~A" s1 s2)))
 
@@ -140,7 +144,8 @@
 
 
 (defun make-index (startmod skipmod)
-  (+ (floor startmod 2) (ash (floor skipmod 2) 2)))
+  (declare (type nonneg-fixnum startmod skipmod))
+  (the nonneg-fixnum (+ (floor startmod 2) (ash (floor skipmod 2) 2))))
 
 
 (defmacro generate-ecase ()
@@ -153,6 +158,7 @@
                           collect `(,(make-index x y)
                                     ,(generate-x-y-loop x y)
                                     (set-bits-simple bits first-incl last-excl every-nth))))))
+)
 
 
 (defun set-bits (bits first-incl last-excl every-nth)
@@ -185,11 +191,11 @@
          (sieve-sizeh (ceiling sieve-size 2))
          (factor 0)
          (factorh 1)
-         (qh (ceiling (floor (sqrt sieve-size)) 2)))
+         (qh (floor (the nonneg-fixnum (1+ (isqrt sieve-size))) 2)))
     (declare (nonneg-fixnum sieve-size sieve-sizeh factor factorh qh) (type sieve-array-type rawbits))
     (loop do
 
-      (loop for num of-type fixnum
+      (loop for num of-type nonneg-fixnum
             from factorh
             to qh
             while (nth-bit-set-p rawbits num)
@@ -201,8 +207,7 @@
 
       ; factor is an odd number >= 3
       ; (floor (the fixnum (* factor factor)) 2) evals to an even number
-      (set-bits rawbits (floor (the nonneg-fixnum (* factor factor)) 2) sieve-sizeh factor))
-    sieve-state))
+      (set-bits rawbits (floor (the nonneg-fixnum (* factor factor)) 2) sieve-sizeh factor))))
 
 
 (defun count-primes (sieve-state)
