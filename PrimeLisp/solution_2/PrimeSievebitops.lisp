@@ -61,7 +61,7 @@
     (      10000 . 1229     )
     (     100000 . 9592     )
     (    1000000 . 78498    )
-    ;(   10000000 . 664579   )  ; probably some ubyte64 overflow
+    (   10000000 . 664579   )
     )
   "Historical data for validating our results - the number of primes
    to be found under some limit, such as 168 primes under 1000")
@@ -160,7 +160,7 @@ The generated code contains references to the variable 'startword'."
   (loop for word
         from 0
         below n
-        append (if (> (+ startbit n) +bits-per-word+)
+        append (if (>= (+ (mod startbit +bits-per-word+) n) +bits-per-word+)
 
                      (prog1 `((setf (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
                               (logior (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
@@ -204,7 +204,7 @@ The generated code contains references to the variable 'last-excl'."
 The generated code contains references to the variables 'bits', 'first-incl', 'last-excl' and 'every-nth'.
 Branches for low values of 'every-nth' (up to 31) will set bits using unrolled dense loops, fallback for higher values is calling 'set-bits-unrolled'."
   `(if (< every-nth (floor last-excl +bits-per-word+))
-         (cond ,@(loop for x from 3 to 31 by 2
+         (cond ,@(loop for x from 3 to 43 by 2
                        collect `((= every-nth ,x)
                                  ,@(generate-dense-loop (floor (expt x 2) 2) x)))
                (t (set-bits-unrolled bits first-incl last-excl every-nth)))
@@ -316,3 +316,30 @@ according to the historical data in +results+."
 
 ; uncomment the following line to display the generated cond stmt containing dense bit-setting loops for the first few distances
 ;(format *error-output* "Expansion of macro generate-cond-stmt:~%~A~%" (macroexpand-1 '(generate-cond-stmt)))
+
+#+nil
+(let* ((last 10000)
+       (asize (+ 4 (floor last +bits-per-word+)))
+       (n 37)
+       (first (floor (* n n) 2)))
+
+  (format t "simple:~%")
+  (let* ((arry (make-array asize :element-type 'sieve-element-type :initial-element 0)))
+    (set-bits-simple arry first last n)
+    (loop for i from 0 below asize
+          do (format t "~3,d: ~64,'0b~%" i (aref arry i))))
+  
+  (format t "dense:~%")
+
+  (let* ((arry (make-array asize :element-type 'sieve-element-type :initial-element 0)))
+    (set-bits-dense arry first last n)
+    (loop for i from 0 below asize
+          do (format t "~3,d: ~64,'0b~%" i (aref arry i)))
+          
+    (loop for bit from first below last
+          do (let ((m (- bit first)))
+               (if (zerop (mod m n))
+                     (unless (nth-bit-set-p arry bit)
+                       (format t "bit ~d ist 0, sollte 1 sein~%" bit))
+                 (when (nth-bit-set-p arry bit)
+                   (format t "bit ~d ist 1, sollte 0 sein~%" bit)))))))
