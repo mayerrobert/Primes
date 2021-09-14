@@ -292,7 +292,6 @@ according to the historical data in +results+."
     (if (and (test) hist (= (count-primes sieve-state) hist)) "yes" "no")))
 
 
-;#+nil
 (let* ((passes 0)
        (start (get-internal-real-time))
        (end (+ start (* internal-time-units-per-second 5)))
@@ -318,30 +317,3 @@ according to the historical data in +results+."
 
 ; uncomment the following line to display the generated cond stmt containing dense bit-setting loops for the first few distances
 ;(format *error-output* "Expansion of macro generate-cond-stmt:~%~A~%" (macroexpand-1 '(generate-cond-stmt)))
-
-#+nil
-(let* ((last 10000)
-       (asize (+ 4 (floor last +bits-per-word+)))
-       (n 37)
-       (first (floor (* n n) 2)))
-
-  (format t "simple:~%")
-  (let* ((arry (make-array asize :element-type 'sieve-element-type :initial-element 0)))
-    (set-bits-simple arry first last n)
-    (loop for i from 0 below asize
-          do (format t "~3,d: ~64,'0b~%" i (aref arry i))))
-  
-  (format t "dense:~%")
-
-  (let* ((arry (make-array asize :element-type 'sieve-element-type :initial-element 0)))
-    (set-bits-dense arry first last n)
-    (loop for i from 0 below asize
-          do (format t "~3,d: ~64,'0b~%" i (aref arry i)))
-          
-    (loop for bit from first below last
-          do (let ((m (- bit first)))
-               (if (zerop (mod m n))
-                     (unless (nth-bit-set-p arry bit)
-                       (format t "bit ~d ist 0, sollte 1 sein~%" bit))
-                 (when (nth-bit-set-p arry bit)
-                   (format t "bit ~d ist 1, sollte 0 sein~%" bit)))))))
