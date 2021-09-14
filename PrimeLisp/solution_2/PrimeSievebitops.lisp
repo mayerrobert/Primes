@@ -162,7 +162,7 @@ The generated code contains references to the variable 'startword'."
         below n
         append (multiple-value-bind (wordoffset bitoffset) (floor startbit +bits-per-word+)
                  (if (>= (+ bitoffset n) +bits-per-word+)
-  
+
                        (prog1 `((setf (aref bits (+ startword ,(+ word wordoffset)))
                                       (logior (aref bits (+ startword ,(+ word wordoffset)))
                                               ,(ash 1 bitoffset))))
@@ -172,16 +172,18 @@ The generated code contains references to the variable 'startword'."
                    `((let ((tmp (logior (aref bits (+ startword ,(+ word wordoffset)))
                                         ,(ash 1 bitoffset))))
                       (declare (type sieve-element-type tmp))
-  
-                      ,@(loop for i from (+ startbit n) below (- +bits-per-word+ n) by n
-                            collect `(setq tmp (logior tmp ,(ash 1 i))) into ret
-                            finally (return (prog1 (append ret
-                                                           `((setf (aref bits (+ startword ,(+ word wordoffset)))
-                                                                   (logior tmp
-                                                                           ,(ash 1 (mod i +bits-per-word+))))))
-                                                   (setq startbit i)
-                                                   (incf startbit n)
-                                                   (decf startbit +bits-per-word+))))))))))
+
+                      ,@(loop for j from (+ startbit n) by n
+                              for i from (+ bitoffset n) by n
+                              while (< (+ i n) +bits-per-word+)
+                              collect `(setq tmp (logior tmp ,(ash 1 i))) into ret
+                              finally (return (prog1 (append ret
+                                                             `((setf (aref bits (+ startword ,(+ word wordoffset)))
+                                                                     (logior tmp
+                                                                             ,(ash 1 (mod i +bits-per-word+))))))
+                                                     (setq startbit j)
+                                                     (incf startbit n)
+                                                     (decf startbit +bits-per-word+))))))))))
 
 
 (defun generate-dense-loop (first n)
