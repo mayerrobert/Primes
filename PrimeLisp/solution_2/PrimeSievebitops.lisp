@@ -160,49 +160,52 @@ The generated code contains references to the variable 'startword'."
   (loop for word
         from 0
         below n
-        append (if (>= (+ (mod startbit +bits-per-word+) n) +bits-per-word+)
+        append (multiple-value-bind (wordoffset bitoffset) (floor startbit +bits-per-word+)
+                 (if (>= (+ bitoffset n) +bits-per-word+)
+  
+                       (prog1 `((setf (aref bits (+ startword ,(+ word wordoffset)))
+                                      (logior (aref bits (+ startword ,(+ word wordoffset)))
+                                              ,(ash 1 bitoffset))))
+                              (incf startbit n)
+                              (decf startbit +bits-per-word+))
 
-                     (prog1 `((setf (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
-                              (logior (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
-                                      ,(ash 1 (mod startbit +bits-per-word+)))))
-                            (incf startbit n)
-                            (decf startbit +bits-per-word+))
-
-                 `((let ((tmp (logior (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
-                                      ,(ash 1 (mod startbit +bits-per-word+)))))
-                    (declare (type sieve-element-type tmp))
-
-                    ,@(loop for i from (+ startbit n) below (- +bits-per-word+ n) by n
-                          collect `(setq tmp (logior tmp ,(ash 1 i))) into ret
-                          finally (return (prog1 (append ret
-                                                         `((setf (aref bits (+ startword ,(+ word (floor startbit +bits-per-word+))))
-                                                                 (logior tmp
-                                                                         ,(ash 1 (mod i +bits-per-word+))))))
-                                                 (setq startbit i)
-                                                 (incf startbit n)
-                                                 (decf startbit +bits-per-word+)))))))))
+                   `((let ((tmp (logior (aref bits (+ startword ,(+ word wordoffset)))
+                                        ,(ash 1 bitoffset))))
+                      (declare (type sieve-element-type tmp))
+  
+                      ,@(loop for i from (+ startbit n) below (- +bits-per-word+ n) by n
+                            collect `(setq tmp (logior tmp ,(ash 1 i))) into ret
+                            finally (return (prog1 (append ret
+                                                           `((setf (aref bits (+ startword ,(+ word wordoffset)))
+                                                                   (logior tmp
+                                                                           ,(ash 1 (mod i +bits-per-word+))))))
+                                                   (setq startbit i)
+                                                   (incf startbit n)
+                                                   (decf startbit +bits-per-word+))))))))))
 
 
 (defun generate-dense-loop (first n)
   "Generate a loop statement to set every nth bit, starting at first.
 The generated code contains references to the variable 'last-excl'."
-  `((let ((startword 0))
-      ,@(generate-set-bits-modulo first n))
-
-    (loop for bit of-type nonneg-fixnum
-          from ,(* n +bits-per-word+)
-          below (- last-excl ,(* n +bits-per-word+))
-          by ,(* n +bits-per-word+)
-          do (let ((startword (floor bit +bits-per-word+)))
-               ,@(generate-set-bits-modulo (mod (+ first (* n +bits-per-word+)) n) n))
-          finally (set-bits-unrolled bits (+ bit ,(mod (+ first (* n +bits-per-word+)) n)) last-excl ,n))))
+  (let ((bits-per-step (* n +bits-per-word+)))
+    `((let ((startword 0))
+        ,@(generate-set-bits-modulo first n))
+  
+      (loop for bit of-type nonneg-fixnum
+            from ,bits-per-step
+            below (- last-excl ,bits-per-step)
+            by ,(* n +bits-per-word+)
+            do (let ((startword (floor bit +bits-per-word+)))
+                 ,@(generate-set-bits-modulo (mod (+ first bits-per-step) n) n))
+            finally (set-bits-unrolled bits (+ bit ,(mod (+ first bits-per-step) n)) last-excl ,n)))))
 )
 
 
 (defmacro generate-cond-stmt ()
   "Expand into a cond stmt whose branches all set every 'every-nth' bit in the array 'bits'.
 The generated code contains references to the variables 'bits', 'first-incl', 'last-excl' and 'every-nth'.
-Branches for low values of 'every-nth' (up to 31) will set bits using unrolled dense loops, fallback for higher values is calling 'set-bits-unrolled'."
+Branches for low values of 'every-nth' (up to 43) will set bits using unrolled dense loops,
+fallback for higher values is calling 'set-bits-unrolled'."
   `(if (< every-nth (floor last-excl +bits-per-word+))
          (cond ,@(loop for x from 3 to 43 by 2
                        collect `((= every-nth ,x)
@@ -291,6 +294,7 @@ according to the historical data in +results+."
     (if (and (test) hist (= (count-primes sieve-state) hist)) "yes" "no")))
 
 
+;#+nil
 (let* ((passes 0)
        (start (get-internal-real-time))
        (end (+ start (* internal-time-units-per-second 5)))
@@ -311,7 +315,7 @@ according to the historical data in +results+."
 
 
 ; uncomment the following line to display the generated loop stmt for setting every 3rd bit starting at 4
-;(format *error-output* "The bit-setting loop for startmod=60 and skipmod=11:~%~A~%" (generate-dense-loop 60 11))
+;(format *error-output* "The bit-setting loop for startmod=84 and skipmod=13:~%~A~%" (generate-dense-loop 84 13))
 
 
 ; uncomment the following line to display the generated cond stmt containing dense bit-setting loops for the first few distances
