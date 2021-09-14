@@ -163,24 +163,19 @@ The generated code contains references to the variable 'startword'."
         append (multiple-value-bind (wordoffset bitoffset) (floor startbit +bits-per-word+)
                  (if (>= (+ bitoffset n) +bits-per-word+)
 
-                       (prog1 `((setf (aref bits (+ startword ,(+ word wordoffset)))
-                                      (logior (aref bits (+ startword ,(+ word wordoffset)))
-                                              ,(ash 1 bitoffset))))
+                       (prog1 `((setf #1=(aref bits (+ startword ,(+ word wordoffset)))
+                                      (logior #1# #2=,(ash 1 bitoffset))))
                               (incf startbit n)
                               (decf startbit +bits-per-word+))
 
-                   `((let ((tmp (logior (aref bits (+ startword ,(+ word wordoffset)))
-                                        ,(ash 1 bitoffset))))
+                   `((let ((tmp (logior #1# #2#)))
                       (declare (type sieve-element-type tmp))
 
                       ,@(loop for j from (+ startbit n) by n
                               for i from (+ bitoffset n) by n
                               while (< (+ i n) +bits-per-word+)
-                              collect `(setq tmp (logior tmp ,(ash 1 i))) into ret
-                              finally (return (prog1 (append ret
-                                                             `((setf (aref bits (+ startword ,(+ word wordoffset)))
-                                                                     (logior tmp
-                                                                             ,(ash 1 (mod i +bits-per-word+))))))
+                              collect `(setq tmp (logior tmp #3=,(ash 1 i))) into ret
+                              finally (return (prog1 (append ret `((setf #1# (logior tmp #3#))))
                                                      (setq startbit j)
                                                      (incf startbit n)
                                                      (decf startbit +bits-per-word+))))))))))
