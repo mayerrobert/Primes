@@ -43,7 +43,7 @@
   (inline set-nth-bit)
 
   (inline set-bits-simple)
-  (inline set-bits-unrolled)
+  ;(inline set-bits-unrolled)  ; don't inline this dozens of times or set-bits-dense will get too big
   (inline set-bits-dense))
 
 
@@ -61,8 +61,7 @@
     (      10000 . 1229     )
     (     100000 . 9592     )
     (    1000000 . 78498    )
-    (   10000000 . 664579   )
-    )
+    (   10000000 . 664579   ))
   "Historical data for validating our results - the number of primes
    to be found under some limit, such as 168 primes under 1000")
 
@@ -154,6 +153,7 @@
 
 
 (eval-when (:load-toplevel :compile-toplevel :execute)
+
 (defun generate-set-bits-modulo (startbit n)
   "Generate statements to set every nth bit in n words, starting at startbit.
 The generated code contains references to the variable 'startword'."
@@ -192,35 +192,36 @@ The generated code contains references to the variable 'last-excl'."
   (let ((bits-per-step (* n +bits-per-word+)))
     `((let ((startword 0))
         ,@(generate-set-bits-modulo first n))
-  
+
       (loop for bit of-type nonneg-fixnum
             from ,bits-per-step
             below (- last-excl ,bits-per-step)
-            by ,(* n +bits-per-word+)
+            by ,bits-per-step
             do (let ((startword (floor bit +bits-per-word+)))
                  ,@(generate-set-bits-modulo (mod (+ first bits-per-step) n) n))
             finally (set-bits-unrolled bits (+ bit ,(mod (+ first bits-per-step) n)) last-excl ,n)))))
-)
+
+) ; end eval-when
 
 
 (defmacro generate-cond-stmt ()
   "Expand into a cond stmt whose branches all set every 'every-nth' bit in the array 'bits'.
 The generated code contains references to the variables 'bits', 'first-incl', 'last-excl' and 'every-nth'.
-Branches for low values of 'every-nth' (up to 43) will set bits using unrolled dense loops,
+Branches for low values of 'every-nth' (up to 53) will set bits using unrolled dense loops,
 fallback for higher values is calling 'set-bits-unrolled'."
-  `(if (< every-nth (floor last-excl +bits-per-word+))
-         (cond ,@(loop for x from 3 to 43 by 2
-                       collect `((= every-nth ,x)
-                                 ,@(generate-dense-loop (floor (expt x 2) 2) x)))
-               (t (set-bits-unrolled bits first-incl last-excl every-nth)))
-     (set-bits-unrolled bits first-incl last-excl every-nth)))
+  `(cond ,@(loop for x from 3 to 53 by 2
+                 collect `((= every-nth ,x)
+                           ,@(generate-dense-loop (floor (expt x 2) 2) x)))
+         (t (set-bits-unrolled bits first-incl last-excl every-nth))))
 
 
 (defun set-bits-dense (bits first-incl last-excl every-nth)
   "Set every every-nth bit in array bits between first-incl and last-excl."
   (declare (type nonneg-fixnum first-incl last-excl every-nth)
            (type sieve-array-type bits))
-  (generate-cond-stmt))
+  (if (< every-nth (floor last-excl +bits-per-word+))
+        (generate-cond-stmt)
+    (set-bits-unrolled bits first-incl last-excl every-nth)))
 
 
 (defun run-sieve (sieve-state)
