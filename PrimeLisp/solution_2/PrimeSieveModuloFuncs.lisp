@@ -32,8 +32,7 @@
     (      10000 . 1229     )
     (     100000 . 9592     )
     (    1000000 . 78498    )
-;    (   10000000 . 664579   )
-    )
+    (   10000000 . 664579   ))
   "Historical data for validating our results - the number of primes
    to be found under some limit, such as 168 primes under 1000")
 
@@ -127,6 +126,7 @@
 
 
 (eval-when (:load-toplevel :compile-toplevel :execute)
+
 (defun sym (s1 s2)
   (intern (format nil "~A~A" s1 s2)))
 
@@ -157,7 +157,8 @@
                                                (type sieve-array-type bits))
                                       ,(generate-x-y-loop x y)
                                       (set-bits-simple bits first-incl last-excl every-nth))))))
-)
+
+) ; end eval-when
 
 
 (deftype func-t () '(function (sieve-array-type nonneg-fixnum nonneg-fixnum nonneg-fixnum nonneg-fixnum nonneg-fixnum) t))

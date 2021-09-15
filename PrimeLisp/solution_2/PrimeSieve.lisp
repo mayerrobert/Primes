@@ -88,8 +88,7 @@
                         (setf (sbit rawbits (+ i factor-times-3)) 1)
                         (incf i factor-times-4)))
 
-             (loop with end2 of-type number-t = end
-                   while (< i end2)
+             (loop while (< i end)
                    do (setf (sbit rawbits i) 1)
                       (incf i factor)))
 
