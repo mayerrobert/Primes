@@ -150,7 +150,7 @@
 
 (defun generate-functions ()
   (loop for y from 1 below +bits-per-word+ by 2
-        append (loop for x from 0 below +bits-per-word+ by 2 ; actually this could be 4
+        append (loop for x from 0 below +bits-per-word+ by 4
                      collect `(setf (aref funcs ,(make-index x y))
                                     (lambda (bits first-incl last-excl every-nth bulkstartword bulkendword)
                                       (declare (type nonneg-fixnum first-incl last-excl every-nth bulkstartword bulkendword)
@@ -213,7 +213,7 @@
         (return-from run-sieve sieve-state))
 
       ; factor is an odd number >= 3
-      ; (floor (the fixnum (* factor factor)) 2) evals to an even number
+      ; (floor (the fixnum (* factor factor)) 2) evals to a multiple of 4
       (set-bits rawbits (floor (the nonneg-fixnum (* factor factor)) 2) sieve-sizeh factor))))
 
 

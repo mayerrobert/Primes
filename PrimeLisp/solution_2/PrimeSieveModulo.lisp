@@ -154,7 +154,7 @@
   ; if the ecase keys are small (and maybe dense?) fixnums then SBCL will compile the ecase into a jump table
   `(ecase (the nonneg-fixnum (make-index startmod skipmod))
      ,@(loop for y from 1 below +bits-per-word+ by 2
-             append (loop for x from 0 below +bits-per-word+ by 2 ; actually this could be 4
+             append (loop for x from 0 below +bits-per-word+ by 4
                           collect `(,(make-index x y)
                                     ,(generate-x-y-loop x y)
                                     (set-bits-simple bits first-incl last-excl every-nth))))))
@@ -207,7 +207,7 @@
         (return-from run-sieve sieve-state))
 
       ; factor is an odd number >= 3
-      ; (floor (the fixnum (* factor factor)) 2) evals to an even number
+      ; (floor (the fixnum (* factor factor)) 2) evals to a multiple of 4
       (set-bits rawbits (floor (the nonneg-fixnum (* factor factor)) 2) sieve-sizeh factor))))
 
 
