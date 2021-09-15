@@ -87,7 +87,8 @@
 
 
 (eval-when (:load-toplevel :compile-toplevel :execute)
-(defun generate-patterns ()
+
+(defun patterns ()
   "Create a vector of bit-patterns."
   (labels ((pattern (n)
              "Return a bit pattern where every n-th bit is 1, starting from least significant bit."
@@ -105,10 +106,11 @@
             to 32
             do (setf (aref res x) (pattern x)))
       res)))
-)
+
+) ; end eval-when
 
 
-(defconstant +patterns+ (coerce (generate-patterns) '(simple-array sieve-element-type 1))
+(defconstant +patterns+ (coerce (patterns) '(simple-array sieve-element-type 1))
   "A vector of bit pattern where every n-th bit is 1, starting from least significant bit.
 E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
 
@@ -119,9 +121,7 @@ E.g. (aref +patterns+ 7) is a bitpattern with every 7th bit set.")
            (type sieve-array-type bits))
   (if (<= every-nth 32)
 
-        (let ((pattern (aref +patterns+ every-nth))
-              (shift 0)
-              (total 0))
+        (let ((pattern (aref +patterns+ every-nth)) (shift 0) (total 0))
           (declare (type sieve-element-type pattern) (fixnum shift total))
 
           ; set first word and prepare shift amounts
