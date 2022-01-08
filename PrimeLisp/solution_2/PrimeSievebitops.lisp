@@ -16,7 +16,7 @@
 
 ;(setq sb-c::*compiler-trace-output* *standard-output*)
 
-(when (member (lisp-implementation-version) '("2.0.0" "2.1.8") :test #'equalp)
+(when (member (lisp-implementation-version) '("2.0.0" "2.1.8" "2.2.0") :test #'equalp)
 (progn
 
 ;;; "OR r, imm1" + "OR r, imm2" -> "OR r, (imm1 | imm2)"
@@ -34,18 +34,18 @@
   (binding* (((size1 dst1 src1) (parse-2-operands stmt))
              ((size2 dst2 src2) (parse-2-operands next)))
     (labels ((larger-of (size1 size2)
-             (if (or (eq size1 :qword) (eq size2 :qword)) :qword :dword))
+               (if (or (eq size1 :qword) (eq size2 :qword)) :qword :dword))
 
-           (find-constant-value (c)
-             (let ((constants (asmstream-constant-vector *asmstream*)))
-               (when (plusp (length constants))
-                 (dovector (constant constants t)
-                   (when (eq c (cdr constant))
-                     (return (cdar constant)))))))
+             (find-constant-value (c)
+               (let ((constants (asmstream-constant-vector *asmstream*)))
+                 (when (plusp (length constants))
+                   (dovector (constant constants t)
+                     (when (eq c (cdr constant))
+                       (return (cdar constant)))))))
 
-           (value-of-constant (op)
-             (cond ((ea-p op) (find-constant-value (ea-disp op)))
-                   (t op))))
+             (value-of-constant (op)
+               (cond ((ea-p op) (find-constant-value (ea-disp op)))
+                     (t op))))
 
       (when (and (gpr-tn-p dst1)
                  (location= dst2 dst1)
@@ -66,6 +66,8 @@
           next)))))
 
 ;;; "OR r, imm1" + "OR r, imm2" -> "OR r, (imm1 | imm2)"
+;;; OR sets the flags according to the result value so combining
+;;; several OR instructions should be ok.
 (defpattern "or + or -> or (signed-byte 32)" ((or) (or)) (stmt next)
   (binding* (((size1 dst1 src1) (parse-2-operands stmt))
              ((size2 dst2 src2) (parse-2-operands next)))
