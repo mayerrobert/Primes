@@ -12,10 +12,6 @@
 #+(and :sbcl :x86-64)
 (eval-when (:load-toplevel :compile-toplevel :execute)
 
-;(setq SB-ASSEM::*show-peephole-transforms-p* t)
-
-;(setq sb-c::*compiler-trace-output* *standard-output*)
-
 (when (member (lisp-implementation-version) '("2.0.0" "2.1.8" "2.2.0") :test #'equalp)
 (progn
 
@@ -132,6 +128,7 @@
 
 (deftype sieve-element-type ()
   `(unsigned-byte ,+bits-per-word+))
+  ;`(unsigned-byte ,+bits-per-word+))
 
 (deftype sieve-array-type ()
   `(simple-array sieve-element-type 1))
@@ -351,9 +348,9 @@ according to the historical data in +results+."
     (if (and (test) hist (= (count-primes sieve-state) hist)) "yes" "no")))
 
 
-(sleep 5) ; sleep for 5 seconds to let CPU cool down
 
-(let* ((passes 0)
+(let* ((ignored (sleep 5)) ; sleep for 5 seconds to let CPU cool down
+       (passes 0)
        (start (get-internal-real-time))
        (end (+ start (* internal-time-units-per-second 5)))
        result)
