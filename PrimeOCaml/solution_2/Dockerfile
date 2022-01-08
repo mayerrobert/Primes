@@ -1,11 +1,11 @@
 FROM primeimages/ocaml:4.12-r1 AS build
 
+RUN mkdir /home/opam/primeocaml
+
 WORKDIR /home/opam/primeocaml
 
 COPY *.ml ./
 
-# hadolint ignore=DL3004
-RUN sudo chown -R opam:nogroup .
 RUN corebuild PrimeOCamlFunctional.native
 
 FROM alpine:3.13
