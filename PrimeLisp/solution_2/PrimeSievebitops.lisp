@@ -129,7 +129,6 @@
 
 (deftype nonneg-fixnum ()
   `(integer 0 ,most-positive-fixnum))
-  ;`(unsigned-byte ,+bits-per-word+))
 
 (deftype sieve-element-type ()
   `(unsigned-byte ,+bits-per-word+))
@@ -351,6 +350,8 @@ according to the historical data in +results+."
   (let ((hist (cdr (assoc (sieve-state-maxints sieve-state) +results+ :test #'=))))
     (if (and (test) hist (= (count-primes sieve-state) hist)) "yes" "no")))
 
+
+(sleep 5) ; sleep for 5 seconds to let CPU cool down
 
 (let* ((passes 0)
        (start (get-internal-real-time))
